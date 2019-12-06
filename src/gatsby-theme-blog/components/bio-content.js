@@ -1,10 +1,28 @@
 import React, { Fragment } from "react"
-import { Styled } from "theme-ui"
+import { Styled, useColorMode } from "theme-ui"
 
-export default () => (
-  <Fragment>
-    Mathias Soeholm.
-    <br />
-    Coding things all day and all night.
-  </Fragment>
-)
+export default () => {
+  const [, setColorMode] = useColorMode()
+
+  return (
+    <Fragment>
+      Mathias Soeholm.
+      <br />
+      Coding things all{" "}
+      <Styled.a
+        style={{ cursor: "pointer" }}
+        onClick={() => setColorMode("light")}
+      >
+        day
+      </Styled.a>{" "}
+      and all{" "}
+      <Styled.a
+        style={{ cursor: "pointer" }}
+        onClick={() => setColorMode("dark")}
+      >
+        night
+      </Styled.a>
+      .
+    </Fragment>
+  )
+}
