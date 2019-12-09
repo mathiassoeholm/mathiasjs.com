@@ -3,19 +3,25 @@ title: What is this
 date: 2019-07-12
 ---
 
-If you're a Java or C# programmer coming to JavaScript, forget all you know about `this`.
-In JavaScript, the value of `this` is unfortunatly not very obvious, since it is determined by _how_ we choose to invoke a function.
+If you're a Java or C# programmer coming to JavaScript, forget all you know about _this_.
+In JavaScript, the value of _this_ is unfortunatly not very obvious, since it is determined by _how_ we choose to invoke a function.
 
-`this` is actually a property of the _execution context_. So to understand what `this` is, we need to understand what an execution context is.
+There's 4 ways to invoke a function and we'll go over each one:
+
+1. As a function `myFunc()`
+2. As a method `myObj.myFunc()`
+3. As a constructor `const object = new myFunc()`
+4. Via the functions apply or call methods `myFunc.call(myObj)`
+
+So what is this?
+
+_this_ is actually a property of the _execution context_. So to understand what _this_ is, we need to understand what an execution context is.
 
 An execution context is a description of the environment the code is running in.
-It has a pointer to the value of `this` and knows which functions and variables are in scope.
+It has a pointer to the value of _this_ and knows which functions and variables are in scope.
 
 So our JavaScript code is always running in a specific execution context.
 Before any code is executed, the JavaScript engine sets up a global execution context for us.
-
-From the get-go, we have a place to look up the value of `this`, namely in the global execution context.
-So what is `this` right off the bat? Try running the following program:
 
 ```js
 console.log(this)
@@ -27,47 +33,72 @@ If we run it in a browser, we get something like:
 Window {parent: global, postMessage: ƒ, blur: ƒ, focus: ƒ, close: ƒ, …}
 ```
 
-This means that `this` refers to the window object, but when does it change?
-As mentioned we get the value from the execution context, so the value of `this` of course changes when we enter a new execution context.
+This means that _this_ refers to the window object, but when does it change?
+As mentioned we get the value from the execution context, so the value of _this_ of course changes when we enter a new execution context.
 
 We enter a new execution context when we invoke a function. Lets start with a simple example:
 
+### Calling a function _as a function_
+
 ```js
 function giveName() {
-  this.name = "Michael";
+  this.name = "Michael"
 }
 
-giveName();
-console.log(this.window.name)
+giveName()
+console.log(window.name)
+console.log(this.name)
+console.log(name)
 ```
 
-What's going on is:
+This output is:
 
-![alt text](execution-context-01.svg "Logo Title Text 1")
+```
+Michael
+Michael
+Michael
+```
 
-Hello, world! This is a demo post for `gatsby-theme-blog`.
+Let's see what's going on in terms of the execution context.
+When the code runs, the JavaScript engine has already set up an execution context for us. This is known as the global execution context (GEC).
 
-Delete me, and get writing!
+![the execution context when the program starts](execution-context-01.svg)
 
-```js:title=gatsby-config.js
-module.exports = {
-  plugins: [
-    "gatsby-theme-blog", // highlight-line
-    "gatsby-theme-notes",
-  ],
+A new execution context is created when we invoke `giveName`:
+
+![the execution context when entering the giveName function](execution-context-02.svg)
+
+Inside `giveName`, we modify _this_ by setting a name property on it. We can see that _this_ references the `window` object.
+When we're done executing `giveName`, we **pop** the giveName execution context and return to the global execution context.
+
+![the execution after executing the giveName function](execution-context-03.svg)
+
+It should be no surprise now that all the log statements print Michael.
+
+### Calling a function _as a method_
+
+In object-oriented programming languages you might think of a method as a function that belongs to a class.
+In JavaScript however, a method is a function, that belongs to an object.
+
+Let's see an example:
+
+```js
+const spiderman = {
+  shootWeb: function() {
+    console.log("🕸️")
+  },
+  getThis: function() {
+    return this
+  },
 }
+
+console.log(spiderman === spiderman.getThis())
 ```
 
-This is another paragraph after the code block.
 
-## This is a secondary heading
 
-```jsx
-import React from "react"
-import { ThemeProvider } from "theme-ui"
-import theme from "./theme"
+### Calling a function _as a constructor_
 
-export default props => (
-  <ThemeProvider theme={theme}>{props.children}</ThemeProvider>
-)
-```
+### What if we forget new
+
+### Calling a function _via apply or call_
