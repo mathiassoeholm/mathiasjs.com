@@ -62,17 +62,16 @@ Michael
 Let's see what's going on in terms of the execution context.
 When the code runs, the JavaScript engine has already set up an execution context for us. This is known as the global execution context (GEC).
 
-<img src="execution-context-as-function-01.svg" alt="WWWWWWWWWWWWWW"/>
-
+<img src="execution-context-as-function-01.svg" alt="WWWWWWWWWWWWWW" />
 
 A new execution context is created when we invoke `giveName`:
 
-<img src="execution-context-as-function-02.svg" alt="WWWWWWWWWWWWWW"/>
+<img src="execution-context-as-function-02.svg" alt="WWWWWWWWWWWWWW" />
 
 Inside `giveName`, we modify _this_ by setting a name property on it. We can see that _this_ references the `window` object.
 When we're done executing `giveName`, we **pop** the giveName execution context and return to the global execution context.
 
-<img src="execution-context-as-function-03.svg" alt="WWWWWWWWWWWWWW"/>
+<img src="execution-context-as-function-03.svg" alt="WWWWWWWWWWWWWW" />
 
 It should be no surprise now that all the log statements print Michael.
 
@@ -101,21 +100,45 @@ results in _this_ being set to the object on the left side of the dot, i.e. spid
 
 Here's what's going on in terms of the execution context. The program starts out in the global execution context
 
-<img src="execution-context-as-method-01.svg" alt="WWWWWWWWWWWWWW"/>
+<img src="execution-context-as-method-01.svg" alt="WWWWWWWWWWWWWW" />
 
 When we enter the execution context of the `spiderman.getThis()` call, we see that `this` now points to the
 target of the method invocation, namely the spiderman object.
 
-<img src="execution-context-as-method-02.svg" alt="WWWWWWWWWWWWWW"/>
+<img src="execution-context-as-method-02.svg" alt="WWWWWWWWWWWWWW" />
 
 We pop the `spiderman.getThis()` execution context when we return from the function.
 
-<img src="execution-context-as-method-03.svg" alt="WWWWWWWWWWWWWW"/>
+<img src="execution-context-as-method-03.svg" alt="WWWWWWWWWWWWWW" />
 
 The function `getThis` returns the value pointed to by _this_ while it was invoked. In our case _this_ pointed to spiderman and we
 therefore see **true** in our output.
 
 ### Calling a function _as a constructor_
+
+As you're about to see, there's nothing special about a constructor function.
+The only noticeable difference is that it starts with a capital letter, but this is just a convention.
+It's a good convention though, so stick to it! What's special is the way we invoke it, using the `new` keyword.
+
+In the next example we use the `new` keyword to invoke the `Superhero` function as a constructor.
+This has a few implications:
+
+1. A new object is created
+2. The value of _this_ is bound to the new object during execution of the function
+3. The object created in step 1 is returned as a result of the whole _new_ expression, unless the function explicitly returns another object.
+
+```js
+function Superhero() {
+  this.job = "fight crime"
+}
+
+const wonderwoman = new Superhero()
+console.log(wonderwoman.job)
+```
+
+The program outputs: fight crime.
+
+
 
 ### What if we forget new
 
