@@ -62,16 +62,17 @@ Michael
 Let's see what's going on in terms of the execution context.
 When the code runs, the JavaScript engine has already set up an execution context for us. This is known as the global execution context (GEC).
 
-![the execution context when the program starts](execution-context-01.svg)
+<img src="execution-context-as-function-01.svg" alt="WWWWWWWWWWWWWW"/>
+
 
 A new execution context is created when we invoke `giveName`:
 
-![the execution context when entering the giveName function](execution-context-02.svg)
+<img src="execution-context-as-function-02.svg" alt="WWWWWWWWWWWWWW"/>
 
 Inside `giveName`, we modify _this_ by setting a name property on it. We can see that _this_ references the `window` object.
 When we're done executing `giveName`, we **pop** the giveName execution context and return to the global execution context.
 
-![the execution after executing the giveName function](execution-context-03.svg)
+<img src="execution-context-as-function-03.svg" alt="WWWWWWWWWWWWWW"/>
 
 It should be no surprise now that all the log statements print Michael.
 
@@ -95,7 +96,24 @@ const spiderman = {
 console.log(spiderman === spiderman.getThis())
 ```
 
+The above program outputs true. The crucial part here is that getThis is a property on spiderman, so invoking it
+results in _this_ being set to the object on the left side of the dot, i.e. spiderman.
 
+Here's what's going on in terms of the execution context. The program starts out in the global execution context
+
+<img src="execution-context-as-method-01.svg" alt="WWWWWWWWWWWWWW"/>
+
+When we enter the execution context of the `spiderman.getThis()` call, we see that `this` now points to the
+target of the method invocation, namely the spiderman object.
+
+<img src="execution-context-as-method-02.svg" alt="WWWWWWWWWWWWWW"/>
+
+We pop the `spiderman.getThis()` execution context when we return from the function.
+
+<img src="execution-context-as-method-03.svg" alt="WWWWWWWWWWWWWW"/>
+
+The function `getThis` returns the value pointed to by _this_ while it was invoked. In our case _this_ pointed to spiderman and we
+therefore see **true** in our output.
 
 ### Calling a function _as a constructor_
 
