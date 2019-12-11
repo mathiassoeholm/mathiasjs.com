@@ -62,16 +62,16 @@ Michael
 Let's see what's going on in terms of the execution context.
 When the code runs, the JavaScript engine has already set up an execution context for us. This is known as the global execution context (GEC).
 
-<img src="execution-context-as-function-01.svg" alt="WWWWWWWWWWWWWW" />
+<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
 
 A new execution context is created when we invoke `giveName`:
 
-<img src="execution-context-as-function-02.svg" alt="WWWWWWWWWWWWWW" />
+<img src="as-function-1.svg" alt="WWWWWWWWWWWWWW" />
 
 Inside `giveName`, we modify _this_ by setting a name property on it. We can see that _this_ references the `window` object.
 When we're done executing `giveName`, we **pop** the giveName execution context and return to the global execution context.
 
-<img src="execution-context-as-function-03.svg" alt="WWWWWWWWWWWWWW" />
+<img src="as-function-2.svg" alt="WWWWWWWWWWWWWW" />
 
 It should be no surprise now that all the log statements print Michael.
 
@@ -100,16 +100,16 @@ results in _this_ being set to the object on the left side of the dot, i.e. spid
 
 Here's what's going on in terms of the execution context. The program starts out in the global execution context
 
-<img src="execution-context-as-method-01.svg" alt="WWWWWWWWWWWWWW" />
+<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
 
 When we enter the execution context of the `spiderman.getThis()` call, we see that `this` now points to the
 target of the method invocation, namely the spiderman object.
 
-<img src="execution-context-as-method-02.svg" alt="WWWWWWWWWWWWWW" />
+<img src="as-method-1.svg" alt="WWWWWWWWWWWWWW" />
 
 We pop the `spiderman.getThis()` execution context when we return from the function.
 
-<img src="execution-context-as-method-03.svg" alt="WWWWWWWWWWWWWW" />
+<img src="as-method-2.svg" alt="WWWWWWWWWWWWWW" />
 
 The function `getThis` returns the value pointed to by _this_ while it was invoked. In our case _this_ pointed to spiderman and we
 therefore see **true** in our output.
@@ -138,8 +138,76 @@ console.log(wonderwoman.job)
 
 The program outputs: fight crime.
 
+As with any other JavaScript program, we start in the global execution context:
 
+<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+
+When we enter the execution context of Superhero, by using the `new` operator, _this_ points to a newly created object:
+
+<img src="as-constructor-1.svg" alt="WWWWWWWWWWWWWW" />
+
+We then assign a value to `this.job`, which sets the _job_ property on the new object:
+
+<img src="as-constructor-2.svg" alt="WWWWWWWWWWWWWW" />
+
+Upon returning to the global execution context, we save the new object returned from the _new_-expression in a variable called wonderwoman.
+
+<img src="as-constructor-3.svg" alt="WWWWWWWWWWWWWW" />
 
 ### What if we forget new
+
+It's easy to forget those three letters, n-e-w, and this frequently happens. Let's see what happens if we do forget it.
+
+```js
+function Superhero() {
+  this.job = "fight crime"
+}
+
+const wonderwoman = Superhero() // Oh no! Forgot to add new 🤦
+console.log(wonderwoman.job)
+```
+
+We get an error:
+
+```
+Uncaught TypeError: Cannot read property 'job' of undefined
+    at <anonymous>:6:25
+```
+
+Invoking Superhero no longer returns an object, because we're not invoking it _as a constructor_, but rather _as a function_.
+So Superhero() returns _undefined_, hence the TypeError.
+
+But what does _this_ point to? Recall that if we invoke a function _as a function_, _this_ points to _window_.
+So we're actually setting a property on window, and if we were to log it, we would get the proof:
+
+```js
+console.log(window.job)
+```
+
+This outputs: fight crime. It is now the windows job to fight crime and wonderwoman is undefined, how will we ever survive? 😮
+What's so bad about this is that it fails silently. We do not discover the issue until we try to access the job property on wonderwoman.
+
+We can make this a great deal better by adding "use strict" to our program.
+
+```js
+"use strict"
+
+function Superhero() {
+  this.job = "fight crime"
+}
+
+const wonderwoman = Superhero() // Oh no! Forgot to add new 🤦
+```
+
+When in _strict mode_, invoking a function _as a function_ sets _this_ to undefined.
+This is great because we don't accidentally add properties to the global object and we catch the error earlier.
+The above program fails during the excution of Superhero.
+
+```
+Uncaught TypeError: Cannot set property 'job' of undefined
+    at Superhero (<anonymous>:4:12)
+```
+
+This is just one of many things fixed by "use strict", and I advise you to always use strict mode.
 
 ### Calling a function _via apply or call_
