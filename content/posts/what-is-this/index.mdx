@@ -211,3 +211,57 @@ Uncaught TypeError: Cannot set property 'job' of undefined
 This is just one of many things fixed by "use strict", and I advise you to always use strict mode.
 
 ### Calling a function _via apply or call_
+
+The last way to invoke a function in JavaScript, is used when you want to be explicit about the value of _this_.
+You do that by using `call` or `apply`. They are very similar; the only difference is that `apply` accepts its arguments as an array, while `call` takes each argument separately.
+
+```js
+// Invoke myFunc with arg1 and arg2, but with 'this' set to thisArg
+myFunc.call(thisArg, arg1, arg2) // With call
+myFunc.apply(thisArg, [arg1, arg2]) // With apply
+```
+
+One usecase for `call` or `apply` is to chain constructors:
+
+```js
+function Media(path) {
+  this.path = path
+}
+
+function Sound(path) {
+  Media.call(this, path)
+  this.format = "mp3"
+  this.bitrate = 320
+}
+
+function Video(path) {
+  Media.call(this, path)
+  this.format = "mp4"
+  this.fps = 30
+}
+
+const sound = new Sound("assets/sounds/woof.mp3")
+const video = new Video("assets/video/doggo.mp4")
+```
+
+I think you know what will happen if you try to invoke Media _as a function_: `Media(path)`.
+
+The use of `call` allow us to extend the new object created when we invoke `Video` or `Sound` _as a constructor_. An object created with the Sound constructor will contain not only the properties _format_ and _bitrate_, but also _path_.
+
+### Conclusion
+
+I hope you now know what _this_ is or at least how to figure it out. It really just boils down to how functions are invoked. I didn't mention arrow functions, because they honestly deserve their own blog post.
+Let me end the post with a little challenge. Look at the following code:
+
+```js
+const myObject = {
+  logThis: function() {
+    console.log(this)
+  },
+}
+
+const logThis = myObject.logThis
+logThis()
+```
+
+What does it log? How do you change it with `call` or `apply`? Try to see if you can use [bind](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_objects/Function/bind) instead.
