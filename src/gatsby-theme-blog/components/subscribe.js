@@ -56,24 +56,26 @@ export const Subscribe = () => {
           placeholder="alice@mail.com"
         />
         <input type="hidden" value="1" name="embed" />
-        <input
+        <button
           sx={{
             fontSize: 2,
-            borderRadius: 4,
             backgroundColor: "subscribeButton",
             color: "subscribeText",
             border: "none",
+            borderRadius: 4,
             fontFamily: "heading",
             padding: 1,
             marginTop: 1,
             fontWeight: "bold",
+            appearance: "none",
             "&:hover": {
               backgroundColor: "subscribeButtonHover",
             },
           }}
           type="submit"
-          value="Subscribe"
-        />
+        >
+          Subscribe
+        </button>
       </form>
     </div>
   )
