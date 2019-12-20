@@ -11,7 +11,7 @@ export default merge(defaultThemeColors, {
     dark: {
       background: "#1e1a3e",
       primary: "#00ff7e",
-      highlight: "#0fb377",
+      highlight: "#000000",
     },
   },
 })
