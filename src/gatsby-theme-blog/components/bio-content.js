@@ -6,7 +6,11 @@ export default () => {
 
   return (
     <Fragment>
-      Mathias Soeholm.
+      Mathias Soeholm, web-developer @{" "}
+      <Styled.a href="https://trifork.com/" rel="noopener" target="_blank">
+        Trifork
+      </Styled.a>
+      .
       <br />
       Coding things all{" "}
       <Styled.a
