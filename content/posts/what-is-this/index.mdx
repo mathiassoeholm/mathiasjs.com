@@ -119,8 +119,8 @@ The program starts out in the global execution context:
   alt="The global execution context with a this property pointing to the window object"
 />
 
-When we enter the execution context of the `spiderman.getThis()` call, we see that `this` now points to the
-target of the method invocation, namely the spiderman object.
+When we enter the execution context of the `spiderman.getThis()` call, we see that _this_ now points to the
+target of the method invocation, namely the spiderman object:
 
 <img
   src="as-method-1.svg"
@@ -286,7 +286,7 @@ The use of `call` allow us to extend the new object created when we invoke `Vide
 ### Conclusion
 
 I hope you now know what _this_ is or at least how to figure it out. It really just boils down to how functions are invoked. I didn't mention arrow functions, because they honestly deserve their own blog post.
-Let me end the post with a little challenge. Look at the following code:
+Let me end this post with a little challenge. Look at the following code:
 
 ```js
 const myObject = {
