@@ -4,7 +4,7 @@ date: 2019-07-12
 ---
 
 If you're a Java or C# programmer coming to JavaScript, forget all you know about _this_.
-In JavaScript, the value of _this_ is unfortunatly not very obvious, since it is determined by _how_ we choose to invoke a function.
+In JavaScript, the value of _this_ is unfortunatly not very obvious, since it's determined by _how_ we choose to invoke a function.
 
 There's 4 ways to invoke a function and we'll go over each one:
 
@@ -13,29 +13,31 @@ There's 4 ways to invoke a function and we'll go over each one:
 3. As a constructor `const object = new myFunc()`
 4. Via the functions apply or call methods `myFunc.call(myObj)`
 
-So what is this?
-
-_this_ is actually a property of the _execution context_. So to understand what _this_ is, we need to understand what an execution context is.
-
-An execution context is a description of the environment the code is running in.
-It has a pointer to the value of _this_ and knows which functions and variables are in scope.
-
-So our JavaScript code is always running in a specific execution context.
-Before any code is executed, the JavaScript engine sets up a global execution context for us.
+So what is _this_? Finding out what _this_ is, is easy. We'll just log it:
 
 ```js
 console.log(this)
 ```
 
-If we run it in a browser, we get something like:
+Running the JavaScript in a browser, will give us something like:
 
 ```
 Window {parent: global, postMessage: ƒ, blur: ƒ, focus: ƒ, close: ƒ, …}
 ```
 
-This means that _this_ refers to the window object, but when does it change?
-As mentioned we get the value from the execution context, so the value of _this_ of course changes when we enter a new execution context.
+We see that _this_ refers to the window object, but that's not always the case.
 
+_this_ is actually a property of the _execution context_. Okay, so what the heck is an execution context?
+
+An execution context is a description of the environment the code is running in.
+Among other things, it has a pointer to the value of _this_ and knows which functions and variables are in scope.
+
+Our JavaScript code always runs in an execution context.
+Before any code is executed, the JavaScript engine sets up a _global execution context_ for us:
+
+<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+
+The value of _this_ can change when we enter a new execution context.
 We enter a new execution context when we invoke a function. Lets start with a simple example:
 
 ### Calling a function _as a function_
@@ -98,7 +100,7 @@ console.log(spiderman === spiderman.getThis())
 The above program outputs true. The crucial part here is that getThis is a property on spiderman, so invoking it
 results in _this_ being set to the object on the left side of the dot, i.e. spiderman.
 
-Here's what's going on in terms of the execution context. The program starts out in the global execution context
+The program starts out in the global execution context:
 
 <img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
 
@@ -156,7 +158,7 @@ Upon returning to the global execution context, we save the new object returned 
 
 ### What if we forget new
 
-It's easy to forget those three letters, n-e-w, and this frequently happens. Let's see what happens if we do forget it.
+It's easy to forget those three letters, n-e-w, and this frequently happens. Let's see what happens if we forget it.
 
 ```js
 function Superhero() {
@@ -175,7 +177,7 @@ Uncaught TypeError: Cannot read property 'job' of undefined
 ```
 
 Invoking Superhero no longer returns an object, because we're not invoking it _as a constructor_, but rather _as a function_.
-So Superhero() returns _undefined_, hence the TypeError.
+So `Superhero()` returns _undefined_, hence the TypeError.
 
 But what does _this_ point to? Recall that if we invoke a function _as a function_, _this_ points to _window_.
 So we're actually setting a property on window, and if we were to log it, we would get the proof:
