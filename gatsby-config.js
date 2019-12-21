@@ -13,8 +13,19 @@ module.exports = {
         respectDNT: true,
       },
     },
+    {
+      resolve: `gatsby-plugin-manifest`,
+      options: {
+        name: `Mathias Soeholm`,
+        short_name: `Mathias S.`,
+        start_url: `/`,
+        background_color: "#1e1a3e",
+        theme_color: "#00ff7e",
+        display: `standalone`,
+        icon: "content/assets/fav-icon.png",
+      },
+    },
   ],
-  // Customize your site metadata:
   siteMetadata: {
     title: `Mathias Soeholm`,
     author: `Mathias Soeholm`,
