@@ -35,7 +35,10 @@ Among other things, it has a pointer to the value of _this_ and knows which func
 Our JavaScript code always runs in an execution context.
 Before any code is executed, the JavaScript engine sets up a _global execution context_ for us:
 
-<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="global-execution-context.svg"
+  alt="The global execution context with a this property pointing to the window object"
+/>
 
 The value of _this_ can change when we enter a new execution context.
 We enter a new execution context when we invoke a function. Lets start with a simple example:
@@ -64,16 +67,25 @@ Michael
 Let's see what's going on in terms of the execution context.
 When the code runs, the JavaScript engine has already set up an execution context for us. This is known as the global execution context (GEC).
 
-<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="global-execution-context.svg"
+  alt="The global execution context with a this property pointing to the window object"
+/>
 
 A new execution context is created when we invoke `giveName`:
 
-<img src="as-function-1.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-function-1.svg"
+  alt="The giveName execution context on top of the global execution context with a this property pointing to the window object"
+/>
 
 Inside `giveName`, we modify _this_ by setting a name property on it. We can see that _this_ references the `window` object.
 When we're done executing `giveName`, we **pop** the giveName execution context and return to the global execution context.
 
-<img src="as-function-2.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-function-2.svg"
+  alt="The global execution context showing that window has a property of name with the value Michael"
+/>
 
 It should be no surprise now that all the log statements print Michael.
 
@@ -102,16 +114,25 @@ results in _this_ being set to the object on the left side of the dot, i.e. spid
 
 The program starts out in the global execution context:
 
-<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="global-execution-context.svg"
+  alt="The global execution context with a this property pointing to the window object"
+/>
 
 When we enter the execution context of the `spiderman.getThis()` call, we see that `this` now points to the
 target of the method invocation, namely the spiderman object.
 
-<img src="as-method-1.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-method-1.svg"
+  alt="The spiderman.getThis execution context on top of the global execution context with a this property pointing to the spiderman object"
+/>
 
 We pop the `spiderman.getThis()` execution context when we return from the function.
 
-<img src="as-method-2.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-method-2.svg"
+  alt="The global execution context with a this property pointing to the window object, next to it is the spiderman object"
+/>
 
 The function `getThis` returns the value pointed to by _this_ while it was invoked. In our case _this_ pointed to spiderman and we
 therefore see **true** in our output.
@@ -142,19 +163,31 @@ The program outputs: fight crime.
 
 As with any other JavaScript program, we start in the global execution context:
 
-<img src="global-execution-context.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="global-execution-context.svg"
+  alt="The global execution context with a this property pointing to the window object"
+/>
 
 When we enter the execution context of Superhero, by using the `new` operator, _this_ points to a newly created object:
 
-<img src="as-constructor-1.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-constructor-1.svg"
+  alt="The Superhero execution context on top of the global execution context with a this property pointing to a new object"
+/>
 
 We then assign a value to `this.job`, which sets the _job_ property on the new object:
 
-<img src="as-constructor-2.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-constructor-2.svg"
+  alt="The Superhero execution context on top of the global execution context with a this property pointing to a new object with the property job value of fight crime"
+/>
 
 Upon returning to the global execution context, we save the new object returned from the _new_-expression in a variable called wonderwoman.
 
-<img src="as-constructor-3.svg" alt="WWWWWWWWWWWWWW" />
+<img
+  src="as-constructor-3.svg"
+  alt="The global execution context with a this property pointing to the window object, next to it is the wonderwoman object with the property job and value fight crime"
+/>
 
 ### What if we forget new
 
