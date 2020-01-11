@@ -1,7 +1,80 @@
 ---
-title: JSON Web Tokens
-date: 2019-12-22
+title: How to build an authentication service with JWT and Netlify functions
+date: 2020-01-11
 ---
+
+In this post I will show you how to build a mini authentication service. It's mini because we won't add things such as email confirmation, password reset and external login providers.
+What we will have though is a secure email/password based _stateless_ authentication service.
+
+By stateless I mean that we will generate a token, in our case a JSON Web Token (JWT),
+which conveys all required information to authenticate a request.
+
+We will use Netlify functions, which are just AWS serverless functions in disguise. Netlify has greatly
+simplified the process of building an API and we'll be able to deploy our serverless functions along with our app by simply pushing to our Git repository.
+
+Instead of just giving you step-by-step instructions, that you can follow like a mindless zombie, I want you to understand the theory behind it. If you only care about the end result, you can just fork the repository [here](https://github.com/mathiassoeholm/jwt-authentication-example), but if you want to understand what you're doing, read on.
+
+## JSON Web Token (JWT)
+
+We want to achieve a way of verifying that a user is who they say they are. Furthermore we want to do this without querying a database. Having the user send an email/password combination on every request won't work, because we will need to check against our database to see if the password is correct.
+
+We also want to do it without keeping track of a session ID in memory as we are using serverless functions, which by their nature of only being alive while the request is processing, don't have persistent memory.
+
+I want to explain how token-based authentication works, by using an analogy.
+
+Pretend you are a server, you can make beep noises if you wish.
+A stranger comes up to you and says: "Please register me, my email is alice@gmail.com and my password is 12345".
+You're like: "Fine, I'll jot that down in my long list of members, but rather than checking that list every time we talk, I'd rather give you something that you can show me to prove who you are next time".
+You find a piece of paper and write alice@gmail.com on it and a date to see how old the proof is. You decide that Alice is allowed to upload media, cast votes and chat so you also write that on the paper.
+Your special handwriting guarantees that no one can fake a piece of paper like this, you are able to recognize a fake instantly.
+
+Later that day, Alice asks you to upload a photo she took. Instead of a password and email, she gives you the piece of paper that you wrote earlier. It states that Alice's email is alice@gmail.com and that she is allowed to upload media. You recognize the handwriting as your own so you let Alice upload the photo.
+
+Several months later, Alice wants to cast a vote in a poll that Bob made. But Alice lost the paper you gave her, she probably threw it out while cleaning.
+You vaguely remember Alice, but you can't be sure it's her unless she shows you the paper.
+Alright.. You'll have to do it the slow way. You ask Alice for her email and password, luckily she remembers this information: "alice@gmail.com, 12345".
+You browse through the loooong list of members, and finally it says alice@gmail.com and the password matches. Phew, you don't want to check that list next time Alice needs to perform a simple action,
+so you write a new piece of paper for her.
+
+If only there was a way for a server to verify the authenticity of a message, to be sure that it was made by a specific entity and that is has not been tampered with. Then we can create something similar to this magical piece of paper. There is, it's called [Digital Signature](https://en.wikipedia.org/wiki/Digital_signature).
+
+A JSON web token is just an open standard for such a piece of paper. It's a way to securely transmit information in the form of a JSON object, and it's usually signed with the algorithm HMAC, RSA or ECDSA.
+
+The cool thing about RSA and ECDSA is that it's asymmetric, so the key used to sign is different from the key used to verify. If this is news to you, I recommend that you go watch [Computerphile's video on public key cryptography](https://www.youtube.com/watch?v=GSIDS_lvRv4).
+
+Using public key cryptography, we can have a private key known only to our authentication service, and a public key available to anyone. Any ol' service we create will then be able to check the authenticity
+of a user, without having to know the private key, hence greatly reducing the risk of losing our private key.
+
+Here's an overview for you:
+
+
+The diagram above  was greatly inspired by [this answer on StackOverflow](https://www.youtube.com/watch?v=GSIDS_lvRv4)
+
+## What I assume you know
+
+Hash functions
+Public/private key cryptography
+Basic JavaScript
+A little React, but not prerequisite to create the authentication service
+
+## What we'll build
+
+A stateless authentication service
+Explain what stateless means
+A small SPA with React
+Show diagram with different services
+React hooks so we can do this: show useUser example
+
+Visit here: <https://jwt-auth-example.netlify.com/>
+
+# About JWT
+
+
+# Netlify functions
+
+# 
+
+# Below here is just notes
 
 # Notes from https://jwt.io/introduction/ (almost copy-pasted):
 
@@ -213,3 +286,36 @@ This info can be the payload of the JWT, but this requires that the payload
 should not contain sensitive information.
 
 # Notes from https://stormpath.com/blog/build-secure-user-interfaces-using-jwts
+
+# Notes from https://doubleoctopus.com/security-wiki/network-architecture/stateless-authentication/
+
+Token-based authentication enables users to obtain a token that gives them access
+to a service without using their username and password.
+Becauase the token is a self-contained entity that conveys all requires information to
+authenticate the request, it is often referred to as stateless authentication.
+
+# Benefits to using JWTs
+
+- You can verify the users identity without doing a database lookup
+- Claims can specify exactly what the user is able to do, this gives fine-grained permissioning.
+- It scales better if we don't need to keep track of sessions.
+-
+
+# Cons of using JWTs
+
+- Sometimes we want a stateful session for example a shopping cart.
+- Takes up a bit more space than a session cookie, and that extra space impacts every request.
+
+# Other resources
+
+https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice
+
+How to generate RSA key for JWT
+https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9
+
+# TODO:
+
+- Add blog post here when done: https://functions.netlify.com/add-tutorial
+- Emphasize that in reality you should probably not use your own authentication service because...
+- Write about netlify cli, and how it uses the same vars as you set in the UI
+- Mention tr -d '\n' < k.key
