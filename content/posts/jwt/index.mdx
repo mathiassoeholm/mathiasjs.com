@@ -9,6 +9,9 @@ What we will have though is a secure email/password based _stateless_ authentica
 By stateless I mean that we will generate a token, in our case a JSON Web Token (JWT),
 which conveys all required information to authenticate a request.
 
+We will also build a small React application that uses our authentication service. You can see a demo of
+the final application [here](https://jwt-auth-example.netlify.com/).
+
 We will use Netlify functions, which are just AWS serverless functions in disguise. Netlify has greatly
 simplified the process of building an API and we'll be able to deploy our serverless functions along with our app by simply pushing to our Git repository.
 
@@ -52,14 +55,64 @@ Here's an overview for you:
   alt="A diagram showing the interaction between the web-app, the authentication service and other services"
 />
 
-The diagram above  was greatly inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice)
+The diagram above was inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice)
 
-## What I assume you know
+### The structure of JWT
 
-Hash functions
-Public/private key cryptography
-Basic JavaScript
-A little React, but not prerequisite to create the authentication service
+### Why not local storage
+
+## The web app
+
+We will build a very simple signup/login flow in React. One of the cooler parts is that we'll create a convenient
+`useAuth` hook, to get the currently authenticated user from any component. Here's are some snippets, showing how clean this hook makes our components:
+
+```jsx
+import React from "react"
+import { UnauthenticatedApp } from "./UnauthenticatedApp"
+import { AuthenticatedApp } from "./AuthenticatedApp"
+import { useAuth } from "./providers/auth-provider"
+
+function App() {
+  const { user } = useAuth()
+  return user ? <AuthenticatedApp /> : <UnauthenticatedApp />
+}
+
+export default App
+```
+
+We borrow this technique from the one and only Kent C. Dodds, check out [Kents blog post about authentication in React apps](https://kentcdodds.com/blog/authentication-in-react-applications).
+
+This hook also provides the necessary methods to complete our authentication flow:
+
+```jsx
+export function Login() {
+  const { login } = useAuth()
+
+  const inputs = [
+    {
+      name: "email",
+      type: "email",
+    },
+    {
+      name: "password",
+      type: "password",
+    },
+  ]
+
+  return (
+    <div>
+      <Form title="Login" onSubmit={login} inputs={inputs} />
+      <p>
+        Don't have an account? <Link to="/signup">Sign up here</Link>
+      </p>
+    </div>
+  )
+}
+```
+
+As you can imagine, the Signup component is very similar.
+
+
 
 ## What we'll build
 
@@ -73,10 +126,9 @@ Visit here: <https://jwt-auth-example.netlify.com/>
 
 # About JWT
 
-
 # Netlify functions
 
-# 
+#
 
 # Below here is just notes
 
