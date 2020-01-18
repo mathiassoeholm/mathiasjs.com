@@ -57,10 +57,6 @@ Here's an overview for you:
 
 The diagram above was inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice)
 
-### The structure of JWT
-
-### Why not local storage
-
 ## The web app
 
 We will build a very simple signup/login flow in React. One of the cooler parts is that we'll create a convenient
@@ -82,7 +78,7 @@ export default App
 
 We borrow this technique from the one and only Kent C. Dodds, check out [Kents blog post about authentication in React apps](https://kentcdodds.com/blog/authentication-in-react-applications).
 
-This hook also provides the necessary methods to complete our authentication flow:
+This hook also provides a login, lougout and signup function. Here's how our Login component will look:
 
 ```jsx
 export function Login() {
@@ -112,6 +108,67 @@ export function Login() {
 
 As you can imagine, the Signup component is very similar.
 
+## Getting started
+
+I assume you have experience with Node. You can choose to follow along with either npm or yarn, I will be using yarn.
+
+### Initialize the repo with create-react-app
+
+We will bootstrap our React application with create-react-app. It's probably the fastest way to get started with a React application, and it's widely used.
+
+All you have to do is run:
+
+```shell
+yarn create react-app amazing-jwt
+```
+
+or
+
+```shell
+npx create-react-app amazing-jwt
+```
+
+create-react-app initializes a Git repo for you. The next thing to do is to push this repository to GitHub, so we can deploy it easily on Netlify.
+But make sure you DON'T create a README and DON'T select .gitignore or license.
+
+<img
+  src="github-create.png"
+  alt="A screenshot of settings that should not be selected when creating the repo on GitHub"
+/>
+
+Now just add the remote and push the repo as described in your new empty repo on GitHub.
+
+```
+git remote add origin git@github.com:your-username/amazing-jwt.git
+git push -u origin master
+```
+
+### Deploy to Netlify
+
+Note that Netlify's UI might have changed since I wrote this, but the process should be similar.
+
+Sign up on <https://www.netlify.com> if you haven't already. Then press the "New site from Git".
+Now just follow Netlify's helpful instructions to connect your repository in GitHub.
+
+Netlify has automatically detected that we're using create-react-app. It therefore knows what our build command is and what directory it outputs to.
+All we have to do is press "Deploy site".
+
+Netlify is now building your app, and a link should show when it's done. In fact, it will now build and publish the app every time you push to your Git repository. Simply amazing!
+
+Thanks Netlify for making this so insanely easy.
+
+### Set up Netlify functions workflow
+
+We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not too bad. Luckily we don't have to write any Webpack configs 😉
+
+In the root of the repo, create a file called netlify.toml with the following content:
+
+```
+[build]
+  functions = "built-lambda"
+```
+
+This tells netlify where to look for our functions.
 
 
 ## What we'll build
