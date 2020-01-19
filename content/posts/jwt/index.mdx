@@ -159,7 +159,9 @@ Thanks Netlify for making this so insanely easy.
 
 ### Set up Netlify functions workflow
 
-We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not too bad. Luckily we don't have to write any Webpack configs 😉
+Note that I use the term serverless functions and Netlify Functions interchangeably. You can say that Netlify Functions are a specific type of serverless functions.
+
+We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not too bad. Luckily we don't have to write any Webpack configs.
 
 In the root of the repo, create a file called netlify.toml with the following content:
 
@@ -168,8 +170,144 @@ In the root of the repo, create a file called netlify.toml with the following co
   functions = "built-lambda"
 ```
 
-This tells netlify where to look for our functions.
+This tells Netlify where to look for our functions. We then install two dev dependencies, which we will use to transpile our functions.
 
+```shell
+yarn add netlify-lambda npm-run-all
+```
+
+[npm-run-all](https://www.npmjs.com/package/npm-run-all) is a tool to run multiple npm-scripts (scripts in our package.json) in parallel. We use it to build our client app and our functions in parallel.
+
+[netlify-lambda](https://github.com/netlify/netlify-lambda) is a helper tool to build/transpile our serverless functions.
+
+We need to adjust our current build script in the package.json file, so we build both our client code and the Netlify Functions. Update your package.json file,
+so you have the following scripts:
+
+```json
+"build": "run-p build:**",
+"build:app": "react-scripts build",
+"build:lambda": "netlify-lambda build src/lambda",
+```
+
+In your src folder, create a lambda directory. This is where we will place our serverless functions.
+
+Let's try and add a simple function, to see if it works. Add the following to src/lambda/hello.js.
+
+```javascript
+export async function handler() {
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "text/plain",
+    },
+    body: "Hello There!",
+  }
+}
+```
+
+If you push your changes to GitHub, a new build will be triggered by Netlify. After pushing to GitHub, open your sites dashboard on Netlify.
+When the build is done, press the Functions tab. You should see the Hello function there. If you press it, it will show you the URL, it looks something like:
+
+`https://SOMETHING.netlify.com/.netlify/functions/hello`
+
+It should say "Hello There!" if you open the link in your browser. Easy right? Congratulations if this was your first serverless function!
+
+Before we start developing the serverless functions we need, we want to be able to run them locally. It sucks if we have to deploy them every time
+just to test the code. Thankfully this is also very easy, with [Netlify Dev](https://www.netlify.com/products/dev) we can run their entire platform locally.
+
+Start by installing the Netlify CLI as a global package:
+
+```shell
+yarn global add netlify-cli
+```
+
+or
+
+```shell
+npm install netlify-cli -g
+```
+
+Then run:
+
+```shell
+netlify dev
+```
+
+It should show you a message similar to:
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│   ◈ Server now ready on http://localhost:8888   │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+If you open http://localhost:8888 you should see the application. Now try going to http://localhost:8888/.netlify/functions/hello. You should
+see the "Hello There!" message again.
+
+Netlify Dev just did A LOT of work for us! Try reading the output in the terminal, and you will realize how much this tool helps us.
+
+It detects we're using create-react-app:
+
+```
+◈ Starting Netlify Dev with create-react-app
+```
+
+It detects that we're using netlify-lambda to build our functions, so it runs the build script:
+
+```
+◈ Function builder netlify-lambda detected: Running npm script build:lambda
+```
+
+It runs react-scripts start, because it knows we're using create-react-app. It even routes 404 requests to index.html, so we can do client side routing:
+
+```
+$ react-scripts start
+ℹ ｢wds｣: Project is running at >your IP address<
+ℹ ｢wds｣: webpack output is served from /
+ℹ ｢wds｣: Content not from webpack is served from /Users/>your username</git/amazing-jwt/public
+ℹ ｢wds｣: 404s will fallback to /index.html
+```
+
+It starts a server for the serverless functions, which even has hot reloading:
+
+```
+◈ Lambda server is listening on 34567
+```
+
+You will see in the output that the React app started on port 3000, so why does it say "Server now ready on http://localhost:8888" ?
+Well, it actually sets up a proxy so we can send requests to the client and our serverless functions on the same port!
+This is exactly how it works in production, so being able to simulate this locally is great. It means that anytime we want to
+send a request from our app to a serverless function, we simply write a relative path:
+
+```javascript
+const response = await fetch(`/.netlify/functions/logout`)
+```
+
+This means we don't care what port it's running on and it saves us from some extra configuration.
+
+## Creating the API
+
+We will now build the authentication API using Netlify Functions. We will have three serverless methods, `/signup`, `/login` and `/logout`. Besides that we
+will create a `/user` function, just to demonstrate how to create an protected endpoint.
+
+### Signup
+
+To get started, I'll show you the required steps as a bunch of comments. We'll then implement the code for each step.
+Take a moment and carefully read each step, try and understand the purpose and why that step is necessary.
+
+```javascript
+// 1. Connect to the database and get a reference to the `users` collection
+// 2. Get the email and password from the request body
+// 3. Check to see if the user already exists, if so return error (409 Conflict)
+// 4. Get a salted hash of the password
+// 5. Insert the email and the hashed password in the `users` collection
+// 6. Get the secret key, used to sign the JWT, from an environment variable
+// 7. Create a JWT with the registered user and email as the payload
+// 8. Serialize the JWT in a secure http-only cookie
+// 9. Return the user new user id and a Set-Cookie header with the JWT cookie
+```
 
 ## What we'll build
 
