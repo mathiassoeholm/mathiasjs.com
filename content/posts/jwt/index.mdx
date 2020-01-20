@@ -295,7 +295,7 @@ will create a `/user` function, just to demonstrate how to create an protected e
 ### Signup
 
 To get started, I'll show you the required steps as a bunch of comments. We'll then implement the code for each step.
-Take a moment and carefully read each step, try and understand the purpose and why that step is necessary.
+Take a moment and carefully read each step, try to understand the purpose and why that step is necessary.
 
 ```javascript
 // 1. Connect to the database and get a reference to the `users` collection
@@ -307,6 +307,88 @@ Take a moment and carefully read each step, try and understand the purpose and w
 // 7. Create a JWT with the registered user and email as the payload
 // 8. Serialize the JWT in a secure http-only cookie
 // 9. Return the user new user id and a Set-Cookie header with the JWT cookie
+```
+
+#### Connecting to the database
+
+We obviously need somewhere to store the registered users. The choice of database is rather arbitrary, since it's only a small part of this blog post
+and our requirements here are very low. I chose MongoDB, since MongoDB Atlas has a free plan that can get us up and running in no time.
+
+Go to <https://cloud.mongodb.com/> and register a new account. Press "Create a cluster" on the free plan and select the cloud provider and region of your choice.
+
+After creating a cluster on mongoDB Atlas, press the CONNECT button. We need to whitelist what IP addresses can access the database. Because we're hosting our serverless functions
+on Netlify, we don't know what IP address will be used, so we whitelist all IP addresses. Simply add `0.0.0.0/0` to the IP address whitelist.
+
+You will also be asked to create a user for the database, I usually go with the username "admin", but feel free to add whatever credential you want.
+We will use the credential in the next step, so remember it.
+
+MongoDB will now ask you how you want to connect, choose "Application". It will show a connection string, similar to:
+
+```
+mongodb+srv://admin:<password>@cluster0-1mz6n.mongodb.net/test?retryWrites=true&w=majority
+```
+
+We will add the database password as an environment variable, such that we don't need to commit sensitive information to the repo.
+In the Netlify UI, open your project and go to Settings -> Build & Deploy -> Environment.
+Now add a new environment variable with the name `MONGODB_PASSWORD` and write the password as the value.
+
+Our serverless functions will now have access to this value when running in production. But what if we want to be able to use our serverless functions locally?
+Well, remember when I said that Netlify Dev runs their entire platform locally. This also includes environment variables, all we need to do is link our local git repo.
+
+Run the following command to link your local repo with Netlify:
+
+```shell
+netlify link
+```
+
+When it asks you how you want to link the folder to a site, just choose "Use current git remote origin".
+If you run `netlify dev` again after linking, you will notice the following message:
+
+```
+◈ Injected build setting env var: MONGODB_PASSWORD
+```
+
+Sidenote: While it's great that Netlify makes this so easy, in a real project we would probably have different environments for production and development.
+Hence we would probably use something like [dotenv](https://www.npmjs.com/package/dotenv) to set some local environment variables with different values for development.
+
+Next we need to use the MongoDB package from NPM to connect to the database, run:
+
+```
+yarn add mongodb
+```
+
+or
+
+```
+npm i mongodb
+```
+
+Finally we can write the code for step 1. We know that both signup and login will need to connect to the database, so let's create a helper that they can both make use of.
+Add the following to a new file in src/helpers/db-helper.js
+
+```javascript
+import { MongoClient } from "mongodb";
+
+const dbName = "jwt-authentication-example";
+
+function createClient() {
+  const client = new MongoClient(
+    // REPLACE WITH YOUR CONNECTION STRING
+    `mongodb+srv://your-username:${process.env.MONGODB_PASSWORD}@cluster0-abcdef.mongodb.net/test?retryWrites=true&w=majority`,
+    { useNewUrlParser: true, useUnifiedTopology: true }
+  );
+
+  // We add a usersCollection function to the client object,
+  // this way neither login or signup need to know the name
+  // of the database or the users collection.
+  client.usersCollection = () => {
+    return client.db(dbName).collection("users");
+  };
+
+  return client;
+}
+
+export { createClient };
 ```
 
 ## What we'll build
