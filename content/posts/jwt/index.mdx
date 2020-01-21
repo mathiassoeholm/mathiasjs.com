@@ -306,7 +306,7 @@ Take a moment and carefully read each step, try to understand the purpose and wh
 // 6. Get the secret key, used to sign the JWT, from an environment variable
 // 7. Create a JWT with the registered user and email as the payload
 // 8. Serialize the JWT in a secure http-only cookie
-// 9. Return the user new user id and a Set-Cookie header with the JWT cookie
+// 9. Return the user id and a Set-Cookie header with the JWT cookie
 ```
 
 #### Connecting to the database
@@ -367,29 +367,124 @@ Finally we can write the code for step 1. We know that both signup and login wil
 Add the following to a new file in src/helpers/db-helper.js
 
 ```javascript
-import { MongoClient } from "mongodb";
+import { MongoClient } from "mongodb"
 
-const dbName = "jwt-authentication-example";
+const dbName = "jwt-authentication-example"
 
 function createClient() {
   const client = new MongoClient(
     // REPLACE WITH YOUR CONNECTION STRING
     `mongodb+srv://your-username:${process.env.MONGODB_PASSWORD}@cluster0-abcdef.mongodb.net/test?retryWrites=true&w=majority`,
     { useNewUrlParser: true, useUnifiedTopology: true }
-  );
+  )
 
   // We add a usersCollection function to the client object,
   // this way neither login or signup need to know the name
   // of the database or the users collection.
   client.usersCollection = () => {
-    return client.db(dbName).collection("users");
-  };
+    return client.db(dbName).collection("users")
+  }
 
-  return client;
+  return client
 }
 
-export { createClient };
+export { createClient }
 ```
+
+Create a new serverless function in src/lambda/signup.js and start with the basic structure:
+
+```javascript
+export async function handler(event) {
+  let errorStatusCode = 500
+
+  try {
+  } catch (err) {
+    return {
+      statusCode: errorStatusCode,
+      body: JSON.stringify({ msg: err.message }),
+    }
+  } finally {
+  }
+}
+```
+
+We can now add the code that performs "step 1" from the comments:
+
+```javascript
+import { createClient } from "../helpers/db-helper";
+
+export async function handler(event) {
+  const dbClient = createClient()
+  let errorStatusCode = 500
+
+  try {
+    // 1. Connect to the database and get a reference to the `users` collection
+    await dbClient.connect()
+    const users = dbClient.usersCollection()
+  } catch (err) {
+    ...
+  } finally {
+    // Remember to close the database connection
+    dbClient.close()
+  }
+}
+```
+
+Getting the email and password from the body is pretty simple. The request body is given to us in the `event` parameter:
+
+```javascript
+// 2. Get the email and password from the request body
+const { email, password } = JSON.parse(event.body)
+```
+
+We can now check if this user already exists:
+
+```javascript
+// 3. Check to see if the user already exists, if so return error (409 Conflict)
+const existingUser = await users.findOne({ email })
+if (existingUser !== null) {
+  errorStatusCode = 409
+  throw new Error(`A user already exists with the email: ${email}`)
+}
+```
+
+You should never store a password in plain-text. By storing a hash of the password, we don't even know the users password. Even if the database is compromised, the attacker won't know the passwords either.
+We will add a random salt, to ensure that two users with the same password will have different hashes. Otherwise you could use a rainbow table, which is essentially a way to reverse a hash function for a finite amount of known inputs.
+
+Hashing the password with a random salt is easily done, when using the package bcrypt. Start by running:
+
+```shell
+yarn add bcryptjs
+```
+
+or
+
+```shell
+npm i bcryptjs
+```
+
+Then step 4 is just:
+
+```javascript
+import bcrypt from "bcryptjs";
+
+...
+
+// 4. Get a salted hash of the password
+const passwordHash = await bcrypt.hash(password, 10);
+```
+
+Now we just insert the email and the hashed password in the users collection. When inserting the object, MongoDB generates a unique ID for us:
+
+```javascript
+// 5. Insert the email and the hashed password in the `users` collection
+const { insertedId } = await users.insertOne({
+  email,
+  password: passwordHash,
+})
+```
+
+
 
 ## What we'll build
 
