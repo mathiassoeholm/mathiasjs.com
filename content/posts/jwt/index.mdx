@@ -448,7 +448,7 @@ if (existingUser !== null) {
 }
 ```
 
-You should never store a password in plain-text. By storing a hash of the password, we don't even know the users password. Even if the database is compromised, the attacker won't know the passwords either.
+You should never store a password in plain-text. By storing a hash of the password, We don't even know the users password. Even if the database is compromised, the attacker won't know the passwords either.
 We will add a random salt, to ensure that two users with the same password will have different hashes. Otherwise you could use a rainbow table, which is essentially a way to reverse a hash function for a finite amount of known inputs.
 
 Hashing the password with a random salt is easily done, when using the package bcrypt. Start by running:
@@ -484,7 +484,164 @@ const { insertedId } = await users.insertOne({
 })
 ```
 
+Before we continue implementing the signup function, we need a key to sign the JWT. We will use a 4096bit RSA public/private key-pair.
+To generate such a key, you will need ssh-keygen and openssl, which should already be install if you're on Mac or Linux.
+Here's the commands to generate the key-pair (thanks to ygotthilf on [GitHub](https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9)):
 
+```shell
+ssh-keygen -t rsa -P "" -b 4096 -m PEM -f jwtRS256.key
+openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+
+# This is your private key
+cat jwtRS256.key
+
+# This is your public key
+cat jwtRS256.key.pub
+```
+
+Remember that the private key is used to sign the JWT when we generate the token, and the public key is used to verify that the token is valid.
+
+We now have a challenge, because we want to add the private key as an environment variable on Netlify. Environment variables on Netlify can't contain line-breaks, but our key is multiple lines.
+To fix this open the private key in a text editor and remove the lines that say `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----`.
+
+Then run the following command:
+
+```shell
+tr -d '\n' < jwtRS256.key > jwtRS256-no-line-breaks.key
+```
+
+The file `jwtRS256-no-line-breaks.key` now contains your private key without the BEGIN and END markers and without any line-breaks. This is suitable to put into an environment variable.
+Create a new environment variable on Netlify with name `JWT_SECRET_KEY` containing the contents of `jwtRS256-no-line-breaks.key`. We can now proceed with generating the JWT.
+
+We will encapsulate the steps for creating the JWT cookie into a separate function, since it will also be used when the user logs in.
+Create a new file src/helpers/jwt-helper.js with the following contents:
+
+```javascript
+/*
+ * Generate a JWT with the user ID and email as the payload,
+ * then serialize to a secure HTTP-only cookie.
+ */
+function createJwtCookie(userId, email) {}
+
+export { createJwtCookie }
+```
+
+To implement this function, we need to install two dependencies. One for generating the JWT and another for serializing a cookie.
+
+```shell
+yarn add jsonwebtoken cookie
+```
+
+or
+
+```shell
+npm i jsonwebtoken cookie
+```
+
+Start by importing the dependencies and get the secret key from the environment variable:
+
+```javascript
+import jwt from "jsonwebtoken"
+import cookie from "cookie"
+
+function createJwtCookie(userId, email) {
+  // 6. Get the secret key, used to sign the JWT, from an environment variable
+  const secretKey = `-----BEGIN RSA PRIVATE KEY-----${"\n"}${
+    process.env.JWT_SECRET_KEY
+  }${"\n"}-----END RSA PRIVATE KEY-----`
+}
+```
+
+It's important the we bring back the BEGIN and END markers and that they are on their own line.
+Next up, we generate the JWT by calling `jwt.sign`:
+
+```javascript
+// 7. Create a JWT with the registered user and email as the payload
+const token = jwt.sign({ userId, email }, secretKey, {
+  algorithm: "RS256",
+  expiresIn: "100 days",
+})
+```
+
+We let the token expire after 100 days, it's up to you to choose how long the token should be valid. The expiration can be thought of a second line of defense.
+If a users token is compromised, it's nice to know that it doesn't last forever. If you were building a banking platform, you might set the expiry to 15 minutes.
+If you're building a mobile app, it might never expire.
+
+Finally we create a cookie and return it:
+
+```javascript
+// 8. Serialize the JWT in a secure http-only cookie
+const jwtCookie = cookie.serialize("jwt", token, {
+  secure: true,
+  httpOnly: true,
+  path: "/",
+})
+
+return jwtCookie
+```
+
+The helper function we just created can now be used in our signup function:
+
+```javascript
+// 9. Return the user id and a Set-Cookie header with the JWT cookie
+return {
+  statusCode: 200,
+  headers: {
+    "Set-Cookie": createJwtCookie(insertedId, email),
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ id: insertedId, email }),
+}
+```
+
+The final signup function looks like this:
+
+```javascript
+import bcrypt from "bcryptjs"
+import { createClient } from "../helpers/db-helper"
+import { createJwtCookie } from "../helpers/jwt-helper"
+
+export async function handler(event) {
+  const dbClient = createClient()
+  let errorStatusCode = 500
+
+  try {
+    await dbClient.connect()
+    const users = dbClient.usersCollection()
+
+    const { email, password } = JSON.parse(event.body)
+
+    const existingUser = await users.findOne({ email })
+    if (existingUser !== null) {
+      errorStatusCode = 409
+      throw new Error(`A user already exists with the email: ${email}`)
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    const { insertedId } = await users.insertOne({
+      email,
+      password: passwordHash,
+    })
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Set-Cookie": createJwtCookie(insertedId, email),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: insertedId, email }),
+    }
+  } catch (err) {
+    return {
+      statusCode: errorStatusCode,
+      body: JSON.stringify({ msg: err.message }),
+    }
+  } finally {
+    dbClient.close()
+  }
+}
+```
 
 ## What we'll build
 
