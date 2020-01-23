@@ -205,6 +205,8 @@ export async function handler() {
 }
 ```
 
+Another thing that you will want to do is add `/built-lambda`  to the .gitignore.
+
 If you push your changes to GitHub, a new build will be triggered by Netlify. After pushing to GitHub, open your sites dashboard on Netlify.
 When the build is done, press the Functions tab. You should see the Hello function there. If you press it, it will show you the URL, it looks something like:
 
@@ -641,6 +643,19 @@ export async function handler(event) {
     dbClient.close()
   }
 }
+```
+
+I encourage you test the signup function by manually sending a request with a tool like [Postman](https://www.getpostman.com/).
+Just fire up your serverless functions with `netlify dev` and create a POST request to localhost:8888/.netlify/signup with an email and password in the body.
+Then check your database on MongoDG Atlas afterwards.
+
+### Login
+
+With the helper functions we just created, adding the login endpoint will be easy.
+Here's all the steps we need to perform in the login function:
+
+```javascript
+
 ```
 
 ## What we'll build
