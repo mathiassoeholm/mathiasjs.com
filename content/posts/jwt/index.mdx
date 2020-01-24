@@ -205,7 +205,7 @@ export async function handler() {
 }
 ```
 
-Another thing that you will want to do is add `/built-lambda`  to the .gitignore.
+Another thing that you will want to do is add `/built-lambda` to the .gitignore.
 
 If you push your changes to GitHub, a new build will be triggered by Netlify. After pushing to GitHub, open your sites dashboard on Netlify.
 When the build is done, press the Functions tab. You should see the Hello function there. If you press it, it will show you the URL, it looks something like:
@@ -646,7 +646,7 @@ export async function handler(event) {
 ```
 
 I encourage you test the signup function by manually sending a request with a tool like [Postman](https://www.getpostman.com/).
-Just fire up your serverless functions with `netlify dev` and create a POST request to localhost:8888/.netlify/signup with an email and password in the body.
+Just fire up your serverless functions with `netlify dev` and create a POST request to `http://localhost:8888/.netlify/functions/signup` with an email and password in the body.
 Then check your database on MongoDG Atlas afterwards.
 
 ### Login
@@ -655,7 +655,201 @@ With the helper functions we just created, adding the login endpoint will be eas
 Here's all the steps we need to perform in the login function:
 
 ```javascript
+// 1. Connect to the database and get a reference to the `users` collection
+// 2. Get the email and password from the request body
+// 3. Check to see if the user exists, if not return error (401 Unauthorized)
+// 4. Compare the password, if it doesn't match return error (401 Unauthorized)
+// 5. Create a JWT and serialize as a secure http-only cookie
+// 6. Return the user id and a Set-Cookie header with the JWT cookie
+```
 
+Since the login function is so similar to the signup function, I challenge you to complete the implementation yourself.
+Otherwise you will find the complete login function by scrolling a little bit.
+
+Here's some space in case you want to give it a go..
+
+<div style="height:500px"></div>
+
+Keep scrolling to get the final implementation...
+
+<div style="height:500px"></div>
+
+src/lambda/login.js
+
+```javascript
+import { createClient } from "../helpers/db-helper"
+import bcrypt from "bcryptjs"
+import { createJwtCookie } from "../helpers/jwt-helper"
+
+export async function handler(event) {
+  const dbClient = createClient()
+  let errorStatusCode = 500
+
+  try {
+    // 1. Connect to the database and get a reference to the `users` collection
+    await dbClient.connect()
+    const users = dbClient.usersCollection()
+
+    // 2. Get the email and password from the request body
+    const { email, password } = JSON.parse(event.body)
+
+    // 3. Check to see if the user exists, if not return error (401 Unauthorized)
+    const existingUser = await users.findOne({ email })
+    if (existingUser == null) {
+      errorStatusCode = 401
+      throw new Error(`Invalid password or email`)
+    }
+
+    // 4. Compare the password, if it doesn't match return error (401 Unauthorized)
+    const matches = await bcrypt.compare(password, existingUser.password)
+    if (!matches) {
+      errorStatusCode = 401
+      throw new Error(`Invalid password or email`)
+    }
+
+    // 5. Create a JWT and serialize as a secure http-only cookie
+    const userId = existingUser._id
+    const jwtCookie = createJwtCookie(userId, email)
+
+    // 6. Return the user id and a Set-Cookie header with the JWT cookie
+    return {
+      statusCode: 200,
+      headers: {
+        "Set-Cookie": jwtCookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: userId, email }),
+    }
+  } catch (err) {
+    return {
+      statusCode: errorStatusCode,
+      body: JSON.stringify({ msg: err.message }),
+    }
+  } finally {
+    dbClient.close()
+  }
+}
+```
+
+I encourage you again to take it for a spin. Use Postman to send a login request to `http://localhost:8888/.netlify/functions/login`.
+
+### Logout
+
+The logout function simply needs to clear the jwt cookie.
+The way you clear a cookie is either by setting the expiry date before the current date.
+However it's possible for a browser to be configured to persist expired cookies,
+therefore we also give it a new value, such as the empty string or "deleted".
+
+We will add a `clearCookie` function to `jwt-helper` file:
+
+```javascript
+function clearCookie() {
+  return "jwt=deleted; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+}
+
+export { createJwtCookie, clearCookie }
+```
+
+With this little helper function, the logout function is simply:
+
+```javascript
+import { clearCookie } from "../helpers/jwt-helper"
+
+export async function handler() {
+  return {
+    statusCode: 200,
+    headers: {
+      "Set-Cookie": clearCookie(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message: "Logged out successfully" }),
+  }
+}
+```
+
+### A protected endpoint
+
+The last serverless function we will create is a `/user` endpoint.
+It will demonstrate how we can perform stateless authentication, in other words
+checking that the user is authenticated without consulting the database.
+
+To verify the JWT we will need the public key. Create a file at src/lambda/publickey.js and paste
+your public key similar to this:
+
+```javascript
+export const publicKey = `-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAsz/lXRCRReGNWMiTMdKV
+reP7cbNTHaxn86FAy98jeJPE5Xd+bwhsBt9hzKLQopWWJ3jY4kvb/jlulTZEN4L3
+zCiS+E18DxTD6H0mEuv1MEtiyOfqOaS0pa+2uwLl6qfdmQOq+JGj2ZeUPCXKHiek
+25XMB6p5gTpmaY7FaALgEnnHQi/fSNsy773dCKm4I+v7MWZwrRbLD5fQOEOjMGSe
+bWR6P9bSLi4x/nR/kULsXjuI/e1zxfxHL4TcMkcT14WBxxhYqRo4aaWDAEwg3tiz
+TOvm4ZySfXBBfA+ygWVo4DZVLRj3XgoFgwRe2WQrJgjEQmp+Ry1RWXlbsnq2+ZM4
+A3NZLs8KKRD+YDO2XTnIPO097aMNzPO9jPDCgoecV4toW4nCGj7jc3B4B571XDW8
+tFWCGXuUyknZ4OVGflXpG6KnNIYgmfqaVIA4YFdiMWiQwCNPfMgU+KSGH1F7S/Pl
+SIV25VvOU4TQ33dl0BWPzpKEXXYbOY8k8bKwqeJTvdNTfuaqXRHdirQDYJOYnyec
+8eV5CAkZEl9pzeBhd9QbBaFM/ILQijzS+L4G3ALG/HIzaI2Do73X1/q+h1BoIZFn
+fFU2Ku9yHnhYvYf25fQZTZPP9E96bUjnpVzXYUmfBM0zsIgRPpZTfNsDbhPJkryJ
+QWWb4JGeUb7ZiqKtrBEciQkCAwEAAQ==
+-----END PUBLIC KEY-----
+`
+```
+
+Anyone can know your public key, in fact I like to create an endpoint for it.
+Then I have a way to get the public key, if I create a service somewhere else which needs to verify the JWT.
+Here's how you can expose your public key as an endpoint:
+
+```javascript
+export async function handler() {
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "text/plain",
+    },
+    body: publicKey,
+  }
+}
+```
+
+Without further ado here's the code for the `/users` serverless function:
+
+```javascript
+import cookie from "cookie"
+import { publicKey } from "./publickey"
+import jwt from "jsonwebtoken"
+
+export async function handler(event) {
+  const cookies = event.headers.cookie && cookie.parse(event.headers.cookie)
+
+  if (!cookies || !cookies.jwt) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({
+        msg: "There is no jwt cookie, so the request is unauthorized",
+      }),
+    }
+  }
+
+  try {
+    // verify throws an error if it can't verify the jwt.
+    // By default it also checks the exp claim, which is
+    // where our expiry information is.
+    // If the token is successfully verified,
+    // it returns the payload.
+    const payload = jwt.verify(cookies.jwt, publicKey)
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: payload.userId, email: payload.email }),
+    }
+  } catch (err) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ msg: err.message }),
+    }
+  }
+}
 ```
 
 ## What we'll build
@@ -671,8 +865,6 @@ Visit here: <https://jwt-auth-example.netlify.com/>
 # About JWT
 
 # Netlify functions
-
-#
 
 # Below here is just notes
 
