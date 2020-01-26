@@ -852,6 +852,154 @@ export async function handler(event) {
 }
 ```
 
+We now know how to create a protected endpoint. We could add endpoints to upload images, make comments, change the user profile etc.
+Each one will need to verify the JWT by using the public key. You can also include more "claims" in the payload, specifying more concretely which actions the user can perform.
+
+That was the API. It is by no means a complete authentication system, since we're missing crucial features like email confirmation and password reset.
+But you can use this on a simple hobby project, or perhaps you can use it as a base and build features on top of it.
+
+## Getting user information locally
+
+One problem we haven't tackled yet is how the client gets information about the currently logged in user. The JWT contains information about
+the user, namely the email address and user ID. We can even add the users name, age, bio etc. to the payload, just remember that this payload comes
+along with each request, so we want to keep it short.
+
+Cool, we'll just look at the payload in the locally stored JWT... Not so fast! The cookie used to store the JWT is HTTP-only, this means we
+can't access it in JavaScript. This is good because it avoids compromising the JWT from XSS (Cross-Site Scripting) attacks.
+
+Our only option then is to send a request to `/user` to figure out what user is logged in. That's a pretty good approach, but I
+think we can do better.
+
+We will simply save the user information in local storage when the user logs in or signs up, and then delete it when the user logs out.
+But what happens when the JWT expires? We will need some way to get a new token, otherwise the client will think its logged in
+but all request to protected endpoints will result in 401.
+
+This can be resolved simply by logging out when we receive a 401. There will be an example of this, so keep on reading.
+
+## Creating a simple client in React
+
+If you're new to React, this section might be a bit hard to follow. I assume you know how to use hooks and the context api.
+Here's some great resources if you want to read up on these topics before continuing:
+
+[Intro to hooks (React docs)](https://reactjs.org/docs/hooks-intro.html)
+
+[Context (React docs)](https://reactjs.org/docs/hooks-intro.html)
+
+[How to use React Context effectively (Kent C. Dodds)](https://kentcdodds.com/blog/how-to-use-react-context-effectively)
+
+I already gave you a sneak peek of how elegant the client side will be once we have our `useAuth` hook in place.
+Create a file in `src/providers/auth-provider.js` with the following content:
+
+```jsx
+import React, { createContext, useContext } from "react"
+
+const AuthContext = createContext({})
+
+function AuthProvider({ children }) {
+  return (
+    <AuthContext.Provider value={{ user, signup, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+const useAuth = () => useContext(AuthContext)
+
+export { useAuth, AuthProvider }
+```
+
+The code doesn't work yet of course, because we need to define what `user`, `signup`, `login` and `logout` are.
+We start by creating the context, using the `createContext` function from React. Notice that we give it an empty object as default value.
+This way when we can still try to destructure the return value from the `useAuth` hook:
+
+```javascript
+// user might be undefined, but we can still attempt to destructure the return value
+const { user } = useAuth()
+```
+
+The `AuthProvider` is a component which will need to wrap our component tree, in order for the context to be available.
+The `useAuth` hook we define is actually just a shorthand for `useContext(AuthContext)`. It just looks a bit nicer.
+
+The AuthProvider will define three request (signup, login and logout), let us start by creating a helper function. You can define this in the same file,
+but there's no need to put it inside the AuthProvider:
+
+```javascript
+async function sendRequest(endpoint, body, successCallback) {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+  }
+
+  if (body) {
+    requestOptions.headers["Content-Type"] = "application/json"
+    requestOptions.body = JSON.stringify(body)
+  }
+
+  const response = await fetch(
+    `/.netlify/functions/${endpoint}`,
+    requestOptions
+  )
+
+  if (response.ok) {
+    const responseBody = await response.json()
+    successCallback(responseBody)
+  }
+}
+```
+
+The body is optional, since `logout` won't send a request body. The function also takes a success callback, because we want different things to happen after each request.
+With this helper function in place, we can define `signup`, `login` and `logout` as:
+
+```javascript
+function AuthProvider({ children }) {
+  const signup = user => sendRequest("signup", user, saveUser)
+  const login = user => sendRequest("login", user, saveUser)
+  const logout = () => sendRequest("logout", undefined, deleteUser)
+
+  ...
+}
+```
+
+As mentioned in the previous section, we will save the user in local storage, so the client can get the logged in user immediately on the next visit.
+Besides saving the user in local storage, we will also keep the user in the `AuthProviders state. This way the application will trigger a rerender if the user state changes.
+
+Add the following to the top of the AuthProvider:
+
+```javascript
+const localUserJson = localStorage.getItem("user")
+const localUser = localUserJson && JSON.parse(localUserJson)
+const [user, setUser] = useState(localUser)
+
+const saveUser = user => {
+  setUser(user)
+  localStorage.setItem("user", JSON.stringify(user))
+}
+
+const deleteUser = () => {
+  setUser(null)
+  localStorage.removeItem("user")
+}
+```
+
+The default value for the user state will be loaded from local storage. If nothings there, it will simply be undefined. The AuthProvider is now complete.
+
+Open src/index.js and wrap the App component with an AuthProvider:
+
+```jsx
+import { AuthProvider } from "./providers/auth-provider"
+
+ReactDOM.render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>,
+  document.getElementById("root")
+)
+```
+
+
+
 ## What we'll build
 
 A stateless authentication service
