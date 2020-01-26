@@ -998,6 +998,48 @@ ReactDOM.render(
 )
 ```
 
+Our application is divided into an authenticated version and an unauthenticated version. We will start by creating the component tree for the unauthenticated app, which involves
+the signup and login screens.
+
+Our routing requirements are very small, that's why we'll use a minimalist router called "wouter". It's similar to the declarative routing used in React Router.
+It even provides the familiar Route, Link, Switch and Redirect components.
+
+```shell
+npm i wouter
+```
+
+We can now set up the routes in `src/UnauthenticatedApp.js`:
+
+```jsx
+import React from "react"
+import { Route, Switch, Redirect } from "wouter"
+
+import { Login } from "./pages/Login"
+import { Signup } from "./pages/Signup"
+
+function UnauthenticatedApp() {
+  return (
+    <Switch>
+      <Route path="/">
+        <Redirect to="login" />
+      </Route>
+      <Route path="/login">
+        <Login />
+      </Route>
+      <Route path="/signup">
+        <Signup />
+      </Route>
+      <Route path="/:rest*">404, not found!</Route>
+    </Switch>
+  )
+}
+
+export { UnauthenticatedApp }
+```
+
+The default route `/` will now redirect to `/login` which will render the Login component. Going to `/signup` will show the Signup component.
+All other routes will simply show the "404, not found!" message.
+
 
 
 ## What we'll build
@@ -1257,5 +1299,4 @@ https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9
 
 - Add blog post here when done: https://functions.netlify.com/add-tutorial
 - Emphasize that in reality you should probably not use your own authentication service because...
-- Write about netlify cli, and how it uses the same vars as you set in the UI
-- Mention tr -d '\n' < k.key
+- Use npm instead of yarn, since it's standard
