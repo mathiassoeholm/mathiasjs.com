@@ -1,5 +1,5 @@
 ---
-title: How to build an authentication service with JWT and Netlify functions
+title: How to build an authentication service with Netlify Functions
 date: 2020-01-27
 ---
 
@@ -350,8 +350,13 @@ If you run `netlify dev` again after linking, you will notice the following mess
 ◈ Injected build setting env var: MONGODB_PASSWORD
 ```
 
-Sidenote: While it's great that Netlify makes this so easy, in a real project we would probably have different environments for production and development.
+---
+**Sidenote**
+
+While it's great that Netlify makes this so easy, in a real project we would probably have different environments for production and development.
 Hence we would probably use something like [dotenv](https://www.npmjs.com/package/dotenv) to set some local environment variables with different values for development.
+
+---
 
 Next we need to use the MongoDB package from NPM to connect to the database, run:
 
