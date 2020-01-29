@@ -4,7 +4,7 @@ date: 2020-01-27
 ---
 
 In this post I will show you how to build a mini authentication service. It's mini because we won't add things such as email confirmation, password reset and external login providers.
-What we will have though is a secure email/password based _stateless_ authentication service.
+What we will have though is a secure email and password based _stateless_ authentication service.
 
 By stateless I mean that we will generate a token, in our case a JSON Web Token (JWT),
 which conveys all required information to authenticate a request.
@@ -13,40 +13,46 @@ We will also build a small React application that uses our authentication servic
 the final application [here](https://jwt-auth-example.netlify.com/).
 
 We will use Netlify functions, which are just AWS serverless functions in disguise. Netlify has greatly
-simplified the process of building an API and we'll be able to deploy our serverless functions along with our app by simply pushing to our Git repository.
+simplified the process of building an API and we'll be able to deploy our serverless functions along with our app by simply pushing to a Git repository.
 
-Instead of just giving you step-by-step instructions, that you can follow like a mindless zombie, I want you to understand the theory behind it. If you only care about the end result, you can just fork the repository [here](https://github.com/mathiassoeholm/jwt-authentication-example), but if you want to understand what you're doing, read on.
+Instead of just giving step-by-step instructions, I want you to understand the underlying logic. If you only care about the end result, you can fork the repository [here](https://github.com/mathiassoeholm/jwt-authentication-example), but if you want to understand what you're doing, read on.
 
 ## JSON Web Token (JWT)
 
-We want to achieve a way of verifying that a user is who they say they are. Furthermore we want to do this without querying a database. Having the user send an email/password combination on every request won't work, because we will need to check against our database to see if the password is correct.
+We want to achieve a way of verifying that a user is who they say they are. Furthermore we want to do this without querying a database. Having the user send an email/password combination on every request will not work, because we will need to check the database to see if the password is correct.
 
-We also want to do it without keeping track of a session ID in memory as we are using serverless functions, which by their nature of only being alive while the request is processing, don't have persistent memory.
+We also can't keep track of a Session ID because it will require a lookup in a datastore when using a serverless function, which is what we're trying to avoid.
 
-I want to explain how token-based authentication works, by using an analogy.
+I want to explain how token-based authentication works, with a little story:
 
-Pretend you are a server, you can make beep noises if you wish.
+---
+
+**Alice and the server**
+
+You are a server, you can make beep noises if you wish.
 A stranger comes up to you and says: "Please register me, my email is alice@gmail.com and my password is 12345".
 You're like: "Fine, I'll jot that down in my long list of members, but rather than checking that list every time we talk, I'd rather give you something that you can show me to prove who you are next time".
-You find a piece of paper and write alice@gmail.com on it and a date to see how old the proof is. You decide that Alice is allowed to upload media, cast votes and chat so you also write that on the paper.
+You find a piece of paper and write alice@gmail.com on it. You decide that Alice is allowed to upload media, cast votes and chat so you also write that on the paper.
 Your special handwriting guarantees that no one can fake a piece of paper like this, you are able to recognize a fake instantly.
 
 Later that day, Alice asks you to upload a photo she took. Instead of a password and email, she gives you the piece of paper that you wrote earlier. It states that Alice's email is alice@gmail.com and that she is allowed to upload media. You recognize the handwriting as your own so you let Alice upload the photo.
 
-Several months later, Alice wants to cast a vote in a poll that Bob made. But Alice lost the paper you gave her, she probably threw it out while cleaning.
+Several months later, Alice wants to cast a vote in a poll that Bob made. But Alice lost the paper you gave her.
 You vaguely remember Alice, but you can't be sure it's her unless she shows you the paper.
 Alright.. You'll have to do it the slow way. You ask Alice for her email and password, luckily she remembers this information: "alice@gmail.com, 12345".
 You browse through the loooong list of members, and finally it says alice@gmail.com and the password matches. Phew, you don't want to check that list next time Alice needs to perform a simple action,
 so you write a new piece of paper for her.
 
+---
+
 If only there was a way for a server to verify the authenticity of a message, to be sure that it was made by a specific entity and that is has not been tampered with. Then we can create something similar to this magical piece of paper. There is, it's called [Digital Signature](https://en.wikipedia.org/wiki/Digital_signature).
 
-A JSON web token is just an open standard for such a piece of paper. It's a way to securely transmit information in the form of a JSON object, and it's usually signed with the algorithm HMAC, RSA or ECDSA.
+A JSON web token (JWT) is just an open standard for such a piece of paper. It's a way to securely transmit information in the form of a JSON object, and it's usually signed with the algorithm HMAC, RSA or ECDSA.
 
-The cool thing about RSA and ECDSA is that it's asymmetric, so the key used to sign is different from the key used to verify. If this is news to you, I recommend that you go watch [Computerphile's video on public key cryptography](https://www.youtube.com/watch?v=GSIDS_lvRv4).
+The cool thing about RSA and ECDSA is that it's asymmetric; the key used to sign is different from the key used to verify. If this is news to you, I recommend that you go watch [Computerphile's video on public key cryptography](https://www.youtube.com/watch?v=GSIDS_lvRv4).
 
-Using public key cryptography, we can have a private key known only to our authentication service, and a public key available to anyone. Any ol' service we create will then be able to check the authenticity
-of a user, without having to know the private key, hence greatly reducing the risk of losing our private key.
+Using public key cryptography, we can have a private key known only to our authentication service, and a public key available to anyone. Any service we create will be able to check the authenticity
+of a user, without having to know the private key, hence greatly reducing the risk of losing it.
 
 Here's an overview for you:
 
@@ -55,12 +61,12 @@ Here's an overview for you:
   alt="A diagram showing the interaction between the web-app, the authentication service and other services"
 />
 
-The diagram above was inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice)
+The diagram above was inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice).
 
 ## The web app
 
 We will build a very simple signup/login flow in React. One of the cooler parts is that we'll create a convenient
-`useAuth` hook, to get the currently authenticated user from any component. Here's are some snippets, showing how clean this hook makes our components:
+`useAuth` hook, to get the currently authenticated user from any component. Here is a snippet, showing how clean this hook makes our components:
 
 ```jsx
 import React from "react"
@@ -76,9 +82,7 @@ function App() {
 export default App
 ```
 
-We borrow this technique from the one and only Kent C. Dodds, check out [Kents blog post about authentication in React apps](https://kentcdodds.com/blog/authentication-in-react-applications).
-
-This hook also provides a login, lougout and signup function. Here's how our Login component will look:
+We borrow this technique from Kent C. Dodds, check out Kents [blog post about authentication in React apps](https://kentcdodds.com/blog/authentication-in-react-applications). The hook also provides a login, logout and signup function. Here's how our Login component will look:
 
 ```jsx
 export function Login() {
@@ -106,11 +110,9 @@ export function Login() {
 }
 ```
 
-As you can imagine, the Signup component is very similar.
-
 ## Getting started
 
-I assume you have experience with Node. You can choose to follow along with either npm or yarn, I will be using yarn.
+We will start by setting up a repository and have Netlify publish our application.
 
 ### Initialize the repo with create-react-app
 
@@ -119,26 +121,23 @@ We will bootstrap our React application with create-react-app. It's probably the
 All you have to do is run:
 
 ```shell
-yarn create react-app amazing-jwt
-```
-
-or
-
-```shell
 npx create-react-app amazing-jwt
 ```
 
 create-react-app initializes a Git repo for you. The next thing to do is to push this repository to GitHub, so we can deploy it easily on Netlify.
 But make sure you DON'T create a README and DON'T select .gitignore or license.
 
-<img
-  src="github-create.png"
-  alt="A screenshot of settings that should not be selected when creating the repo on GitHub"
-/>
+<div style="width:400px">
+  <img
+    src="github-create.png"
+    alt="A screenshot of settings that should not be selected when creating the repo on GitHub"
+  />
+</div>
+<br />
 
 Now just add the remote and push the repo as described in your new empty repo on GitHub.
 
-```
+```shell
 git remote add origin git@github.com:your-username/amazing-jwt.git
 git push -u origin master
 ```
@@ -173,7 +172,7 @@ In the root of the repo, create a file called netlify.toml with the following co
 This tells Netlify where to look for our functions. We then install two dev dependencies, which we will use to transpile our functions.
 
 ```shell
-yarn add netlify-lambda npm-run-all
+npm i netlify-lambda npm-run-all
 ```
 
 [npm-run-all](https://www.npmjs.com/package/npm-run-all) is a tool to run multiple npm-scripts (scripts in our package.json) in parallel. We use it to build our client app and our functions in parallel.
@@ -218,12 +217,6 @@ Before we start developing the serverless functions we need, we want to be able 
 just to test the code. Thankfully this is also very easy, with [Netlify Dev](https://www.netlify.com/products/dev) we can run their entire platform locally.
 
 Start by installing the Netlify CLI as a global package:
-
-```shell
-yarn global add netlify-cli
-```
-
-or
 
 ```shell
 npm install netlify-cli -g
@@ -351,6 +344,7 @@ If you run `netlify dev` again after linking, you will notice the following mess
 ```
 
 ---
+
 **Sidenote**
 
 While it's great that Netlify makes this so easy, in a real project we would probably have different environments for production and development.
@@ -359,12 +353,6 @@ Hence we would probably use something like [dotenv](https://www.npmjs.com/packag
 ---
 
 Next we need to use the MongoDB package from NPM to connect to the database, run:
-
-```
-yarn add mongodb
-```
-
-or
 
 ```
 npm i mongodb
@@ -461,12 +449,6 @@ We will add a random salt, to ensure that two users with the same password will 
 Hashing the password with a random salt is easily done, when using the package bcrypt. Start by running:
 
 ```shell
-yarn add bcryptjs
-```
-
-or
-
-```shell
 npm i bcryptjs
 ```
 
@@ -534,12 +516,6 @@ export { createJwtCookie }
 ```
 
 To implement this function, we need to install two dependencies. One for generating the JWT and another for serializing a cookie.
-
-```shell
-yarn add jsonwebtoken cookie
-```
-
-or
 
 ```shell
 npm i jsonwebtoken cookie
@@ -1018,3 +994,10 @@ I hope you can see how awesome this workflow is. It's super simple to deploy our
 I am by no means a security expert, and would therefore advise you to be cautious if you're using this in production. Security is hard to get right and it's
 better to outsource it to people who know what they're doing. That's why I would go with a service like Netlify Identity, Auth0, Firebase or similar.
 However, I hope you now have a better understanding of token based authentication, which will help you use and understand third party authentication services.
+
+## References
+
+- The authentication code is partially based on Wes Bos' fullstack React course - <https://advancedreact.com>
+- An introduction to JWT - <https://jwt.io/introduction>
+- Token Based Authentication SPAs. This article gave me the idea of storing the JWT payload in local storage - <https://stormpath.com/blog/token-auth-spa>
+- Original diagram of overall architecture was inspired by this SO answer - <https://stackoverflow.com/a/56149939/1157286>
