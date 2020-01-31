@@ -116,7 +116,7 @@ We will start by setting up a repository and have Netlify publish our applicatio
 
 ### Initialize the repo with create-react-app
 
-We will bootstrap our React application with create-react-app. It's probably the fastest way to get started with a React application, and it's widely used.
+We will bootstrap our React application with [create-react-app](https://create-react-app.dev/). It lets you set up a React project with a single command.
 
 All you have to do is run:
 
@@ -125,7 +125,7 @@ npx create-react-app amazing-jwt
 ```
 
 create-react-app initializes a Git repo for you. The next thing to do is to push this repository to GitHub, so we can deploy it easily on Netlify.
-But make sure you DON'T create a README and DON'T select .gitignore or license.
+But make sure you DON'T create a README and DON'T select .gitignore or license. GitHub even tells us to skip this step if we're importing an existing repository:
 
 <div style="width:400px">
   <img
@@ -135,32 +135,30 @@ But make sure you DON'T create a README and DON'T select .gitignore or license.
 </div>
 <br />
 
-Now just add the remote and push the repo as described in your new empty repo on GitHub.
+Now just add the remote and push the code as described in your new empty repo on GitHub.
 
 ```shell
 git remote add origin git@github.com:your-username/amazing-jwt.git
 git push -u origin master
 ```
 
-### Deploy to Netlify
+### Deploy on Netlify
 
 Note that Netlify's UI might have changed since I wrote this, but the process should be similar.
 
 Sign up on <https://www.netlify.com> if you haven't already. Then press the "New site from Git".
 Now just follow Netlify's helpful instructions to connect your repository in GitHub.
 
-Netlify has automatically detected that we're using create-react-app. It therefore knows what our build command is and what directory it outputs to.
+Netlify has automatically detected that we're using create-react-app, it therefore knows what our build command is and what directory it outputs to.
 All we have to do is press "Deploy site".
 
-Netlify is now building your app, and a link should show when it's done. In fact, it will now build and publish the app every time you push to your Git repository. Simply amazing!
+Netlify is now building your app, and a link should show when it's done. In fact, it will now build and publish the app every time you push to the master branch in your Git repository. Simply amazing! Thanks Netlify for making this so easy 🙌
 
-Thanks Netlify for making this so insanely easy.
+### Set up Netlify Functions workflow
 
-### Set up Netlify functions workflow
+Note that I use the term serverless functions and Netlify Functions interchangeably. You can say that Netlify Functions are a specific vendor of serverless functions.
 
-Note that I use the term serverless functions and Netlify Functions interchangeably. You can say that Netlify Functions are a specific type of serverless functions.
-
-We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not too bad. Luckily we don't have to write any Webpack configs.
+We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not that bad. Luckily we don't have to write any Webpack configs.
 
 In the root of the repo, create a file called netlify.toml with the following content:
 
@@ -169,18 +167,17 @@ In the root of the repo, create a file called netlify.toml with the following co
   functions = "built-lambda"
 ```
 
-This tells Netlify where to look for our functions. We then install two dev dependencies, which we will use to transpile our functions.
+This tells Netlify where to look for our serverless functions. We then install two dev dependencies, which we will use to transpile our functions.
 
 ```shell
-npm i netlify-lambda npm-run-all
+npm i netlify-lambda npm-run-all -D
 ```
 
-[npm-run-all](https://www.npmjs.com/package/npm-run-all) is a tool to run multiple npm-scripts (scripts in our package.json) in parallel. We use it to build our client app and our functions in parallel.
+[npm-run-all](https://www.npmjs.com/package/npm-run-all) is a tool to run multiple npm-scripts (scripts in our package.json) in parallel. We use it to build our client app and our serverless functions in parallel.
 
 [netlify-lambda](https://github.com/netlify/netlify-lambda) is a helper tool to build/transpile our serverless functions.
 
-We need to adjust our current build script in the package.json file, so we build both our client code and the Netlify Functions. Update your package.json file,
-so you have the following scripts:
+We need to adjust the current build script in our package.json file, so we build both the client code and the serverless. Update your package.json file, so you have the following scripts:
 
 ```json
 "build": "run-p build:**",
@@ -214,7 +211,7 @@ When the build is done, press the Functions tab. You should see the Hello functi
 It should say "Hello There!" if you open the link in your browser. Easy right? Congratulations if this was your first serverless function!
 
 Before we start developing the serverless functions we need, we want to be able to run them locally. It sucks if we have to deploy them every time
-just to test the code. Thankfully this is also very easy, with [Netlify Dev](https://www.netlify.com/products/dev) we can run their entire platform locally.
+just to test the code. Thankfully this is also very easy. With [Netlify Dev](https://www.netlify.com/products/dev) we can run their entire platform locally.
 
 Start by installing the Netlify CLI as a global package:
 
@@ -259,9 +256,9 @@ It runs react-scripts start, because it knows we're using create-react-app. It e
 
 ```
 $ react-scripts start
-ℹ ｢wds｣: Project is running at >your IP address<
+ℹ ｢wds｣: Project is running at YOUR_IP_ADDRESS
 ℹ ｢wds｣: webpack output is served from /
-ℹ ｢wds｣: Content not from webpack is served from /Users/>your username</git/amazing-jwt/public
+ℹ ｢wds｣: Content not from webpack is served from WHERE_YOU_PLACED_YOUR_REPO/amazing-jwt/public
 ℹ ｢wds｣: 404s will fallback to /index.html
 ```
 
@@ -271,7 +268,7 @@ It starts a server for the serverless functions, which even has hot reloading:
 ◈ Lambda server is listening on 34567
 ```
 
-You will see in the output that the React app started on port 3000, so why does it say "Server now ready on http://localhost:8888" ?
+You will see in the output that the React app started on port 3000 and the lambda server on port 34567 in my case, so why does it say `Server now ready on http://localhost:8888`?
 Well, it actually sets up a proxy so we can send requests to the client and our serverless functions on the same port!
 This is exactly how it works in production, so being able to simulate this locally is great. It means that anytime we want to
 send a request from our app to a serverless function, we simply write a relative path:
@@ -280,12 +277,12 @@ send a request from our app to a serverless function, we simply write a relative
 const response = await fetch(`/.netlify/functions/logout`)
 ```
 
-This means we don't care what port it's running on and it saves us from some extra configuration.
+So we don't care what port the serverless function is running on and it saves us from some extra configuration.
 
 ## Creating the API
 
-We will now build the authentication API using Netlify Functions. We will have three serverless methods, `/signup`, `/login` and `/logout`. Besides that we
-will create a `/user` function, just to demonstrate how to create an protected endpoint.
+We will now build the authentication API using Netlify Functions. We will have three serverless functions: `/signup`, `/login` and `/logout`. Besides that we
+will create a `/user` function, just to demonstrate how to create a protected endpoint.
 
 ### Signup
 
@@ -307,9 +304,11 @@ Take a moment and carefully read each step, try to understand the purpose and wh
 #### Connecting to the database
 
 We obviously need somewhere to store the registered users. The choice of database is rather arbitrary, since it's only a small part of this blog post
-and our requirements here are very low. I chose MongoDB, since MongoDB Atlas has a free plan that can get us up and running in no time.
+and our requirements are very limited. I chose MongoDB, since MongoDB Atlas has a free plan that can get us up and running in no time.
 
-Go to <https://cloud.mongodb.com/> and register a new account. Press "Create a cluster" on the free plan and select the cloud provider and region of your choice.
+Note that MongoDB Atlas' UI might have changed since I wrote this, so I'm intentionally a bit vague in describing these steps and won't use any screenshots.
+
+Go to <https://cloud.mongodb.com> and register a new account. Press "Create a cluster" on the free plan and select the cloud provider and region of your choice.
 
 After creating a cluster on mongoDB Atlas, press the CONNECT button. We need to whitelist what IP addresses can access the database. Because we're hosting our serverless functions
 on Netlify, we don't know what IP address will be used, so we whitelist all IP addresses. Simply add `0.0.0.0/0` to the IP address whitelist.
