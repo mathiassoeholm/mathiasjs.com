@@ -1,15 +1,15 @@
 ---
 title: How to build an authentication service with Netlify Functions
-date: 2020-01-27
+date: 2020-02-05
 ---
 
 In this post I will show you how to build a mini authentication service. It's mini because we won't add things such as email confirmation, password reset and external login providers.
-What we will have though is a secure email and password based _stateless_ authentication service.
+What we will have though is an email and password based _stateless_ authentication service suitable for serverless functions.
 
 By stateless I mean that we will generate a token, in our case a JSON Web Token (JWT),
 which conveys all required information to authenticate a request.
 
-We will also build a small React application that uses our authentication service. You can see a demo of
+We will also build a small React application that uses the authentication service. You can see a demo of
 the final application [here](https://jwt-auth-example.netlify.com/).
 
 We will use Netlify functions, which are just AWS serverless functions in disguise. Netlify has greatly
@@ -19,33 +19,38 @@ Instead of just giving step-by-step instructions, I want you to understand the u
 
 ## JSON Web Token (JWT)
 
-We want to achieve a way of verifying that a user is who they say they are. Furthermore we want to do this without querying a database. Having the user send an email/password combination on every request will not work, because we will need to check the database to see if the password is correct.
+Traditionally you would maintain a session on the server, usually in the form of a random identifier, called the Sesssion ID, which maps to the logged in user. This identifier is sent on every request from the client, so we know which user it's coming from.
+The mapping from session ID to user require some kind of datastore, hence making the authentication stateful. This means that our serverless function would have to query a database
+every time we need to check if the user is authenticated.
 
-We also can't keep track of a Session ID because it will require a lookup in a datastore when using a serverless function, which is what we're trying to avoid.
-
-I want to explain how token-based authentication works, with a little story:
-
----
-
-**Alice and the server**
-
-You are a server, you can make beep noises if you wish.
-A stranger comes up to you and says: "Please register me, my email is alice@gmail.com and my password is 12345".
-You're like: "Fine, I'll jot that down in my long list of members, but rather than checking that list every time we talk, I'd rather give you something that you can show me to prove who you are next time".
-You find a piece of paper and write alice@gmail.com on it. You decide that Alice is allowed to upload media, cast votes and chat so you also write that on the paper.
-Your special handwriting guarantees that no one can fake a piece of paper like this, you are able to recognize a fake instantly.
-
-Later that day, Alice asks you to upload a photo she took. Instead of a password and email, she gives you the piece of paper that you wrote earlier. It states that Alice's email is alice@gmail.com and that she is allowed to upload media. You recognize the handwriting as your own so you let Alice upload the photo.
-
-Several months later, Alice wants to cast a vote in a poll that Bob made. But Alice lost the paper you gave her.
-You vaguely remember Alice, but you can't be sure it's her unless she shows you the paper.
-Alright.. You'll have to do it the slow way. You ask Alice for her email and password, luckily she remembers this information: "alice@gmail.com, 12345".
-You browse through the loooong list of members, and finally it says alice@gmail.com and the password matches. Phew, you don't want to check that list next time Alice needs to perform a simple action,
-so you write a new piece of paper for her.
+However with JWT, we can achieve stateless authentication. I want to explain how token-based authentication works, with a little story:
 
 ---
 
-If only there was a way for a server to verify the authenticity of a message, to be sure that it was made by a specific entity and that is has not been tampered with. Then we can create something similar to this magical piece of paper. There is, it's called [Digital Signature](https://en.wikipedia.org/wiki/Digital_signature).
+**Token Teahouse**
+
+You are the proud owner of a very popular teahouse, Token Teahouse. It has thousands upon thousands of members and new people join all the time.
+A new face appears at the door, her name is Alice, and she wants to be a part of Token Teahouse.
+You welcome her, and ask for a password, so you can verify her membership at a later time if needed.
+After writing down the details in a very very long list, you fabricate a special piece of paper for her.
+
+It states that Alice is a level 1 tea-sipper and has access to two cups of green tea. The paper is signed by you, so you will know it's authentic.
+
+The following day, Alice is at the door again. A thousand people have already visited since she joined, so you don't recognize her.
+Alice claims that she is a level 1 tea-sipper and she shows you the paper to prove it. Sure enough, that's your signature,
+so you let her in. That only took a few seconds. This is the secret to the success of your amazing teahouse.
+Not spending too much time verifying you customers membership, is the key to scale any great teahouse.
+
+Another person, vaguely familiar appears at the door. He claims to be Bob, level 7 tea-downer, but he has no paper to prove it.
+Unfortunately Bob forgot to take the paper out of his trousers when washing them. Bob looks a bit ashamed, but you cheer him up: "No biggy Bob! This is why I keep a list of all my members. It will take a while, but we will sort it out". Bob gives you his password, and you start
+going through the members list to verify if this really is Bobs password.
+
+After a few minutes, you find Bob in the list and sure enough, Bob destroyed the paper but he remembered his password.
+You fabricate a new piece of paper for Bob, and let him in.
+
+---
+
+If only there was a way for a server to verify the authenticity of a message, to be sure that it was made by a specific entity and that is has not been tampered with. Then we can create something similar to the signed paper stating the tea-level of our customers. There is, it's called [Digital Signature](https://en.wikipedia.org/wiki/Digital_signature).
 
 A JSON web token (JWT) is just an open standard for such a piece of paper. It's a way to securely transmit information in the form of a JSON object, and it's usually signed with the algorithm HMAC, RSA or ECDSA.
 
@@ -62,6 +67,20 @@ Here's an overview for you:
 />
 
 The diagram above was inspired by [this answer on StackOverflow](https://stackoverflow.com/questions/56147281/use-jwt-to-authenticate-separate-api-microservice).
+
+---
+
+**JWT controversy**
+
+I asked for feedback on my Teahouse analogy [on Reddit](https://www.reddit.com/r/javascript/comments/exm8g0/askjs_is_this_a_good_explanation_of_tokenbased) and accidentally sparked a controversial but healthy discussion on using JWTs for sessions.
+
+The main problem with the approach we're taking is that it's hard to revoke JWTs, in case we want to block a user. Someone might have been hacked, in which case this is an essential feature.
+To do this we would need to keep a blacklist of JWTs, available to all our services. Before authenticating we would have to check the blacklist, which suddenly makes our authentication stateful.
+Making stateful authentication is not the end of the world, but it's suddenly less suitable for a serverless function.
+
+This is another reason to not roll your own authentication, but use something like Auth0 or Firebase. Completing this tutorial though, will still give you some insight into JSON web tokens even if the final authentication service is incomplete.
+
+---
 
 ## The web app
 
@@ -344,7 +363,7 @@ If you run `netlify dev` again after linking, you will notice the following mess
 
 ---
 
-**Sidenote**
+**Dotenv**
 
 While it's great that Netlify makes this so easy, in a real project we would probably have different environments for production and development.
 Hence we would probably use something like [dotenv](https://www.npmjs.com/package/dotenv) to set some local environment variables with different values for development.
