@@ -74,11 +74,11 @@ The diagram above was inspired by [this answer on StackOverflow](https://stackov
 
 I asked for feedback on my Teahouse analogy [on Reddit](https://www.reddit.com/r/javascript/comments/exm8g0/askjs_is_this_a_good_explanation_of_tokenbased) and accidentally sparked a controversial but healthy discussion on using JWTs for sessions.
 
-The main problem with the approach we're taking is that it's hard to revoke JWTs, in case we want to block a user. Someone might have been hacked, in which case this is an essential feature.
+The main problem with the approach we're taking is that it's hard to revoke JWTs, in case we want to block a user. This is a definitely a must if someone is hacked for example.
 To do this we would need to keep a blacklist of JWTs, available to all our services. Before authenticating we would have to check the blacklist, which suddenly makes our authentication stateful.
 Making stateful authentication is not the end of the world, but it's suddenly less suitable for a serverless function.
 
-This is another reason to not roll your own authentication, but use something like Auth0 or Firebase. Completing this tutorial though, will still give you some insight into JSON web tokens even if the final authentication service is incomplete.
+This is another reason not to roll your own authentication, but use something like Auth0 or Firebase. Completing this tutorial though, will still give you some insight into JSON web tokens even if the final authentication service is incomplete.
 
 ---
 
@@ -135,16 +135,13 @@ We will start by setting up a repository and have Netlify publish our applicatio
 
 ### Initialize the repo with create-react-app
 
-We will bootstrap our React application with [create-react-app](https://create-react-app.dev/). It lets you set up a React project with a single command.
-
-All you have to do is run:
+We will bootstrap our React application with [create-react-app](https://create-react-app.dev/). It lets you set up a React project with a single command. All you have to do is run:
 
 ```shell
 npx create-react-app amazing-jwt
 ```
 
-create-react-app initializes a Git repo for you. The next thing to do is to push this repository to GitHub, so we can deploy it easily on Netlify.
-But make sure you DON'T create a README and DON'T select .gitignore or license. GitHub even tells us to skip this step if we're importing an existing repository:
+create-react-app initializes a Git repo for you. You can now push this repository to GitHub, so we can deploy it easily on Netlify. Go ahead and create a new repo on GitHub, but make sure you DON'T create a README and DON'T select .gitignore or license. GitHub even tells us to skip this step if we're importing an existing repository:
 
 <div style="width:400px">
   <img
@@ -166,18 +163,16 @@ git push -u origin master
 Note that Netlify's UI might have changed since I wrote this, but the process should be similar.
 
 Sign up on <https://www.netlify.com> if you haven't already. Then press the "New site from Git".
-Now just follow Netlify's helpful instructions to connect your repository in GitHub.
+Now just follow Netlify's helpful instructions to connect your GitHub repository.
 
 Netlify has automatically detected that we're using create-react-app, it therefore knows what our build command is and what directory it outputs to.
-All we have to do is press "Deploy site".
-
-Netlify is now building your app, and a link should show when it's done. In fact, it will now build and publish the app every time you push to the master branch in your Git repository. Simply amazing! Thanks Netlify for making this so easy 🙌
+All we have to do is press "Deploy site". Netlify is now building your app, and a link should show when it's done. In fact, it will now build and publish the app every time you push to the master branch in your Git repository. Simply amazing! Thanks Netlify, for making this so easy 🙌
 
 ### Set up Netlify Functions workflow
 
-Note that I use the term serverless functions and Netlify Functions interchangeably. You can say that Netlify Functions are a specific vendor of serverless functions.
+Note that I use the term serverless functions and Netlify Functions interchangeably. Netlify Functions is just a specific vendor of serverless functions.
 
-We want to transpile our Netlify Functions, so we can use ES6 features, so we'll need an extra bit of configuration, but it's not that bad. Luckily we don't have to write any Webpack configs.
+We want to transpile our Netlify Functions, so we can use ES6 features. We'll need an extra bit of configuration, but it's really minimal. Luckily we don't have to write any Webpack configs.
 
 In the root of the repo, create a file called netlify.toml with the following content:
 
@@ -186,7 +181,7 @@ In the root of the repo, create a file called netlify.toml with the following co
   functions = "built-lambda"
 ```
 
-This tells Netlify where to look for our serverless functions. We then install two dev dependencies, which we will use to transpile our functions.
+This tells Netlify where to look for our serverless functions. We then install two dev dependencies, which we will use to transpile them.
 
 ```shell
 npm i netlify-lambda npm-run-all -D
@@ -196,7 +191,7 @@ npm i netlify-lambda npm-run-all -D
 
 [netlify-lambda](https://github.com/netlify/netlify-lambda) is a helper tool to build/transpile our serverless functions.
 
-We need to adjust the current build script in our package.json file, so we build both the client code and the serverless. Update your package.json file, so you have the following scripts:
+We need to adjust the current build script in our package.json file, so we build both the client code and the serverless API. Update your package.json file, so you have the following scripts:
 
 ```json
 "build": "run-p build:**",
@@ -206,7 +201,7 @@ We need to adjust the current build script in our package.json file, so we build
 
 In your src folder, create a lambda directory. This is where we will place our serverless functions.
 
-Let's try and add a simple function, to see if it works. Add the following to src/lambda/hello.js.
+Let's try to add a simple function, to see if it works. Add the following to src/lambda/hello.js:
 
 ```javascript
 export async function handler() {
@@ -220,7 +215,7 @@ export async function handler() {
 }
 ```
 
-Another thing that you will want to do is add `/built-lambda` to the .gitignore.
+Another thing that you will want to do is add `/built-lambda` to the .gitignore file.
 
 If you push your changes to GitHub, a new build will be triggered by Netlify. After pushing to GitHub, open your sites dashboard on Netlify.
 When the build is done, press the Functions tab. You should see the Hello function there. If you press it, it will show you the URL, it looks something like:
@@ -229,7 +224,7 @@ When the build is done, press the Functions tab. You should see the Hello functi
 
 It should say "Hello There!" if you open the link in your browser. Easy right? Congratulations if this was your first serverless function!
 
-Before we start developing the serverless functions we need, we want to be able to run them locally. It sucks if we have to deploy them every time
+Before we start developing the authentication API, we want to be able to run our functions locally. It sucks if we have to deploy them every time
 just to test the code. Thankfully this is also very easy. With [Netlify Dev](https://www.netlify.com/products/dev) we can run their entire platform locally.
 
 Start by installing the Netlify CLI as a global package:
@@ -296,7 +291,7 @@ send a request from our app to a serverless function, we simply write a relative
 const response = await fetch(`/.netlify/functions/logout`)
 ```
 
-So we don't care what port the serverless function is running on and it saves us from some extra configuration.
+We don't care what port the serverless function is running on, which saves us from some extra configuration.
 
 ## Creating the API
 
