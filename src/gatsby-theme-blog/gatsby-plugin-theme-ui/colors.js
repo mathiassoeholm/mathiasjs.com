@@ -6,7 +6,7 @@ export default merge(defaultThemeColors, {
   subscribeText: defaultThemeColors.modes.dark.text,
   subscribeButton: "#10b377",
   subscribeButtonHover: "#0d6947",
-  primary: "#009c8e",
+  primary: "#008276",
   modes: {
     dark: {
       background: "#1e1a3e",
