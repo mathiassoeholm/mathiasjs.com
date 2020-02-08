@@ -6,6 +6,10 @@ export const wrapRootElement = ({ element }) => {
     <>
       <Global
         styles={css`
+          html {
+            text-size-adjust: none;
+          }
+
           button {
             cursor: pointer;
           }
