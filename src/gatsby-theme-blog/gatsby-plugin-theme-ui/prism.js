@@ -1,6 +1,6 @@
-import shadesOfPurple from "@theme-ui/prism/presets/shades-of-purple.json"
+import baseTheme from "@theme-ui/prism/presets/vs-dark.json"
 
 export default {
-  ...shadesOfPurple,
+  ...baseTheme,
   backgroundColor: "#13102b",
 }
