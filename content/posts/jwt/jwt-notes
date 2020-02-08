@@ -246,3 +246,9 @@ https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9
 - Add blog post here when done: https://functions.netlify.com/add-tutorial
 - Emphasize that in reality you should probably not use your own authentication service because...
 - Use npm instead of yarn, since it's standard
+
+
+
+Reason we can't save user locally.
+What if the JWT is expired? The user won't find out until they perform an action that requires auth,
+in which case they will just be logged out randomly.
