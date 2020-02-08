@@ -143,7 +143,7 @@ npx create-react-app amazing-jwt
 
 create-react-app initializes a Git repo for you. You can now push this repository to GitHub, so we can deploy it easily on Netlify. Go ahead and create a new repo on GitHub, but make sure you DON'T create a README and DON'T select .gitignore or license. GitHub even tells us to skip this step if we're importing an existing repository:
 
-<div style="width:400px">
+<div style="width:400px;max-width:90vw">
   <img
     src="github-create.png"
     alt="A screenshot of settings that should not be selected when creating the repo on GitHub"
@@ -220,7 +220,9 @@ Another thing that you will want to do is add `/built-lambda` to the .gitignore 
 If you push your changes to GitHub, a new build will be triggered by Netlify. After pushing to GitHub, open your sites dashboard on Netlify.
 When the build is done, press the Functions tab. You should see the Hello function there. If you press it, it will show you the URL, it looks something like:
 
-`https://SOMETHING.netlify.com/.netlify/functions/hello`
+```
+https://SOMETHING.netlify.com/.netlify/functions/hello
+```
 
 It should say "Hello There!" if you open the link in your browser. Easy right? Congratulations if this was your first serverless function!
 
@@ -249,7 +251,7 @@ It should show you a message similar to:
 └─────────────────────────────────────────────────┘
 ```
 
-If you open http://localhost:8888 you should see the application. Now try going to http://localhost:8888/.netlify/functions/hello. You should
+If you open http://localhost:8888 you should see the application. Now try going to localhost:8888/.netlify/functions/hello. You should
 see the "Hello There!" message again.
 
 Netlify Dev just did A LOT of work for us! Try reading the output in the terminal, and you will realize how much this tool helps us.
@@ -641,7 +643,13 @@ export async function handler(event) {
 ```
 
 I encourage you test the signup function by manually sending a request with a tool like [Postman](https://www.getpostman.com/).
-Just fire up your serverless functions with `netlify dev` and create a POST request to `http://localhost:8888/.netlify/functions/signup` with an email and password in the body.
+Just fire up your serverless functions with `netlify dev` and create a POST request to
+
+```
+localhost:8888/.netlify/functions/signup
+```
+
+with an email and password in the body.
 Then check your database on MongoDB Atlas afterwards.
 
 ### Login
@@ -726,7 +734,11 @@ export async function handler(event) {
 }
 ```
 
-I encourage you again to take it for a spin. Use Postman to send a login request to `http://localhost:8888/.netlify/functions/login`.
+I encourage you again to take it for a spin. Use Postman to send a login request to
+
+```
+http://localhost:8888/.netlify/functions/login
+```
 
 ### Logout
 
@@ -1014,4 +1026,4 @@ However, I hope you now have a better understanding of token based authenticatio
 - The authentication code is partially based on Wes Bos' fullstack React course - <https://advancedreact.com>
 - An introduction to JWT - <https://jwt.io/introduction>
 - Token Based Authentication SPAs. This article gave me the idea of storing the JWT payload in local storage - <https://stormpath.com/blog/token-auth-spa>
-- Original diagram of overall architecture was inspired by this SO answer - <https://stackoverflow.com/a/56149939/1157286>
+- Original diagram of overall architecture was inspired by [this Stackoverflow answer](https://stackoverflow.com/a/56149939/1157286)
