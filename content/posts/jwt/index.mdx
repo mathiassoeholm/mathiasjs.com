@@ -1,6 +1,6 @@
 ---
-title: How to build an authentication service with Netlify Functions
-date: 2020-02-05
+title: Build an authentication service with Netlify Functions
+date: 2020-02-08
 ---
 
 In this post I will show you how to build a mini authentication service. It's mini because we won't add things such as email confirmation, password reset and external login providers.
@@ -324,7 +324,7 @@ Note that MongoDB Atlas' UI might have changed since I wrote this, so I'm intent
 
 Go to <https://cloud.mongodb.com> and register a new account. Press "Create a cluster" on the free plan and select the cloud provider and region of your choice.
 
-After creating a cluster on mongoDB Atlas, press the CONNECT button. We need to whitelist what IP addresses can access the database. Because we're hosting our serverless functions
+After creating a cluster on mongoDB Atlas, press the CONNECT button. We need to whitelist IP addresses that can access the database. Because we're hosting our serverless functions
 on Netlify, we don't know what IP address will be used, so we whitelist all IP addresses. Simply add `0.0.0.0/0` to the IP address whitelist.
 
 You will also be asked to create a user for the database, I usually go with the username "admin", but feel free to add whatever credential you want.
@@ -336,7 +336,7 @@ MongoDB will now ask you how you want to connect, choose "Application". It will 
 mongodb+srv://admin:<password>@cluster0-1mz6n.mongodb.net/test?retryWrites=true&w=majority
 ```
 
-We will add the database password as an environment variable, such that we don't need to commit sensitive information to the repo.
+We will add the database password as an environment variable, so we don't commit sensitive information to the repo.
 In the Netlify UI, open your project and go to Settings -> Build & Deploy -> Environment.
 Now add a new environment variable with the name `MONGODB_PASSWORD` and write the password as the value.
 
@@ -389,8 +389,8 @@ function createClient() {
   // We add a usersCollection function to the client object,
   // this way neither login or signup need to know the name
   // of the database or the users collection.
-  client.usersCollection = () => {
-    return client.db(dbName).collection("users")
+  client.usersCollection = function() {
+    return this.db(dbName).collection("users");
   }
 
   return client
@@ -456,7 +456,7 @@ if (existingUser !== null) {
 }
 ```
 
-You should never store a password in plain-text. By storing a hash of the password, We don't even know the users password. Even if the database is compromised, the attacker won't know the passwords either.
+You should never store a password in plain-text. By storing a hash of the password, we won't even know the users password. Even if the database is compromised, the attacker will not know the passwords either.
 We will add a random salt, to ensure that two users with the same password will have different hashes. Otherwise you could use a rainbow table, which is essentially a way to reverse a hash function for a finite amount of known inputs.
 
 Hashing the password with a random salt is easily done, when using the package bcrypt. Start by running:
@@ -487,7 +487,7 @@ const { insertedId } = await users.insertOne({
 ```
 
 Before we continue implementing the signup function, we need a key to sign the JWT. We will use a 4096bit RSA public/private key-pair.
-To generate such a key, you will need ssh-keygen and openssl, which should already be install if you're on Mac or Linux.
+To generate such a key, you will need ssh-keygen and openssl, which should already be installed if you're on Mac or Linux.
 Here's the commands to generate the key-pair (thanks to ygotthilf on [GitHub](https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9)):
 
 ```shell
@@ -542,13 +542,14 @@ import cookie from "cookie"
 
 function createJwtCookie(userId, email) {
   // 6. Get the secret key, used to sign the JWT, from an environment variable
-  const secretKey = `-----BEGIN RSA PRIVATE KEY-----${"\n"}${
-    process.env.JWT_SECRET_KEY
-  }${"\n"}-----END RSA PRIVATE KEY-----`
+  const secretKey =
+    "-----BEGIN RSA PRIVATE KEY-----\n" +
+    process.env.JWT_SECRET_KEY +
+    "\n-----END RSA PRIVATE KEY-----";
 }
 ```
 
-It's important the we bring back the BEGIN and END markers and that they are on their own line.
+It's important that we bring back the BEGIN and END markers and that they are on their own line.
 Next up, we generate the JWT by calling `jwt.sign`:
 
 ```javascript
@@ -559,8 +560,8 @@ const token = jwt.sign({ userId, email }, secretKey, {
 })
 ```
 
-We let the token expire after 100 days, it's up to you to choose how long the token should be valid. The expiration can be thought of a second line of defense.
-If a users token is compromised, it's nice to know that it doesn't last forever. If you were building a banking platform, you might set the expiry to 15 minutes.
+We let the token expire after 100 days, it's up to you to choose how long the token should be valid. The expiration can be thought of as a second line of defense.
+If a users token is compromised, it's nice to know that it doesn't last forever. If you we're building a banking platform, you might set the expiry to 15 minutes.
 If you're building a mobile app, it might never expire.
 
 Finally we create a cookie and return it:
@@ -568,7 +569,7 @@ Finally we create a cookie and return it:
 ```javascript
 // 8. Serialize the JWT in a secure http-only cookie
 const jwtCookie = cookie.serialize("jwt", token, {
-  secure: true,
+  secure: process.env.NETLIFY_DEV !== "true",
   httpOnly: true,
   path: "/",
 })
@@ -576,7 +577,7 @@ const jwtCookie = cookie.serialize("jwt", token, {
 return jwtCookie
 ```
 
-The helper function we just created can now be used in our signup function:
+We check `process.env.NETLIFY_DEV` because we are not using `https` for local development. The helper function we just created can now be used in our signup function:
 
 ```javascript
 // 9. Return the user id and a Set-Cookie header with the JWT cookie
@@ -641,7 +642,7 @@ export async function handler(event) {
 
 I encourage you test the signup function by manually sending a request with a tool like [Postman](https://www.getpostman.com/).
 Just fire up your serverless functions with `netlify dev` and create a POST request to `http://localhost:8888/.netlify/functions/signup` with an email and password in the body.
-Then check your database on MongoDG Atlas afterwards.
+Then check your database on MongoDB Atlas afterwards.
 
 ### Login
 
@@ -730,7 +731,7 @@ I encourage you again to take it for a spin. Use Postman to send a login request
 ### Logout
 
 The logout function simply needs to clear the jwt cookie.
-The way you clear a cookie is either by setting the expiry date before the current date.
+The way you clear a cookie serverside is by setting the expiry date before the current date.
 However it's possible for a browser to be configured to persist expired cookies,
 therefore we also give it a new value, such as the empty string or "deleted".
 
@@ -866,7 +867,7 @@ think we can do better.
 
 We will simply save the user information in local storage when the user logs in or signs up, and then delete it when the user logs out.
 But what happens when the JWT expires? We will need some way to get a new token, otherwise the client will think its logged in
-but all request to protected endpoints will result in 401.
+but all requests to protected endpoints will result in 401.
 
 This can be resolved simply by logging out when we receive a 401. There will be an example of this, so keep on reading.
 
