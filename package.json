@@ -8,16 +8,29 @@
     "develop": "gatsby develop"
   },
   "dependencies": {
+    "@mdx-js/mdx": "^1.6.1",
+    "@mdx-js/react": "^1.6.1",
     "gatsby": "^2.22.0",
     "gatsby-plugin-eslint": "^2.0.8",
+    "gatsby-plugin-mdx": "^1.2.9",
     "gatsby-plugin-ts": "^2.7.1",
+    "gatsby-source-filesystem": "^2.3.5",
     "graphql": "^15.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.34.0",
+    "@typescript-eslint/parser": "^2.34.0",
     "eslint": "^7.0.0",
+    "eslint-config-react-app": "^5.2.1",
     "eslint-loader": "^4.0.2",
+    "eslint-plugin-flowtype": "^5.1.0",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.20.0",
+    "eslint-plugin-react-hooks": "^4.0.2",
+    "prettier": "^2.0.5",
     "typescript": "^3.9.2"
   }
 }
