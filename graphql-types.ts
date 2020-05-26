@@ -1786,6 +1786,9 @@ export type SitePageFieldsEnum =
   | 'pluginCreator___pluginOptions___stages'
   | 'pluginCreator___pluginOptions___options___emitWarning'
   | 'pluginCreator___pluginOptions___options___failOnError'
+  | 'pluginCreator___pluginOptions___alias___lib'
+  | 'pluginCreator___pluginOptions___alias___api'
+  | 'pluginCreator___pluginOptions___alias___components'
   | 'pluginCreator___pluginOptions___name'
   | 'pluginCreator___pluginOptions___path'
   | 'pluginCreator___pluginOptions___pathCheck'
@@ -1979,6 +1982,9 @@ export type SitePluginFieldsEnum =
   | 'pluginOptions___stages'
   | 'pluginOptions___options___emitWarning'
   | 'pluginOptions___options___failOnError'
+  | 'pluginOptions___alias___lib'
+  | 'pluginOptions___alias___api'
+  | 'pluginOptions___alias___components'
   | 'pluginOptions___name'
   | 'pluginOptions___path'
   | 'pluginOptions___pathCheck'
@@ -2099,14 +2105,28 @@ export type SitePluginPackageJsonPeerDependenciesFilterListInput = {
 export type SitePluginPluginOptions = {
   stages?: Maybe<Array<Maybe<Scalars['String']>>>;
   options?: Maybe<SitePluginPluginOptionsOptions>;
+  alias?: Maybe<SitePluginPluginOptionsAlias>;
   name?: Maybe<Scalars['String']>;
   path?: Maybe<Scalars['String']>;
   pathCheck?: Maybe<Scalars['Boolean']>;
 };
 
+export type SitePluginPluginOptionsAlias = {
+  lib?: Maybe<Scalars['String']>;
+  api?: Maybe<Scalars['String']>;
+  components?: Maybe<Scalars['String']>;
+};
+
+export type SitePluginPluginOptionsAliasFilterInput = {
+  lib?: Maybe<StringQueryOperatorInput>;
+  api?: Maybe<StringQueryOperatorInput>;
+  components?: Maybe<StringQueryOperatorInput>;
+};
+
 export type SitePluginPluginOptionsFilterInput = {
   stages?: Maybe<StringQueryOperatorInput>;
   options?: Maybe<SitePluginPluginOptionsOptionsFilterInput>;
+  alias?: Maybe<SitePluginPluginOptionsAliasFilterInput>;
   name?: Maybe<StringQueryOperatorInput>;
   path?: Maybe<StringQueryOperatorInput>;
   pathCheck?: Maybe<BooleanQueryOperatorInput>;

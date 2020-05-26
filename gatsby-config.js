@@ -12,6 +12,16 @@ module.exports = {
         },
       },
     },
+    {
+      resolve: "gatsby-plugin-alias-imports",
+      options: {
+        alias: {
+          lib: "src/lib",
+          api: "src/api",
+          components: "src/components",
+        },
+      },
+    },
     `gatsby-plugin-ts`,
     {
       resolve: `gatsby-source-filesystem`,
@@ -21,5 +31,6 @@ module.exports = {
       },
     },
     `gatsby-plugin-mdx`,
+    `gatsby-plugin-emotion`,
   ],
 };
