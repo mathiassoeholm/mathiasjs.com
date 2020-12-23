@@ -6,10 +6,7 @@ export default () => {
 
   return (
     <Fragment>
-      Mathias Soeholm, web-developer @{" "}
-      <Styled.a href="https://trifork.com/" rel="noopener" target="_blank">
-        Trifork
-      </Styled.a>
+      Mathias Soeholm, Software Engineer @ LEGO Education
       .
       <br />
       Coding things all{" "}
