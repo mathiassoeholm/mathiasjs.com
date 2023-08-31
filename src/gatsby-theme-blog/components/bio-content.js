@@ -6,8 +6,7 @@ export default () => {
 
   return (
     <Fragment>
-      Mathias Soeholm, Software Engineer @ LEGO Education
-      .
+      Mathias Soeholm, Software Engineer @ Set Snail.
       <br />
       Coding things all{" "}
       <Styled.a
